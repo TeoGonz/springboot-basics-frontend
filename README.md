@@ -1,36 +1,77 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Bitácora del curso — Frontend
 
-## Getting Started
+Front de la **bitácora del curso** en **Next.js 16** (App Router). Es la única capa HTML del proyecto: el backend Spring (`springboot_java_project/`, repositorio hermano) quedó como **API REST pura** y no sirve vistas.
 
-First, run the development server:
+Hoy el contenido es **estático**: la página pública se renderiza en build, sin llamar a la API. El consumo de la API (login, zona privada) llega con la autenticación JWT del backend.
+
+## Stack
+
+| Pieza | Detalle |
+|---|---|
+| Framework | Next.js 16.2 (App Router) + React 19 |
+| Lenguaje | TypeScript 5 |
+| Estilos | Tailwind v4 (configuración en CSS, sin `tailwind.config.js`) |
+| Iconos | `react-icons/bs` — el set de Bootstrap Icons, como componentes SVG |
+| i18n | Diccionarios JSON propios + rutas por idioma |
+
+## Puesta en marcha
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev     # http://localhost:3000 -> redirige a /es
+npm run build   # genera /es, /en y /pt como HTML estático
+npm start       # sirve el build
+npm run lint
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+No requiere el backend levantado.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Rutas
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Ruta | Descripción |
+|---|---|
+| `/` | Redirige a `/es` (idioma por defecto) |
+| `/es`, `/en`, `/pt` | Bitácora pública: hero, entradas, acerca de |
 
-## Learn More
+Cualquier otro idioma devuelve 404 (`dynamicParams = false`).
 
-To learn more about Next.js, take a look at the following resources:
+## Estructura
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+front-react-project/
+├── next.config.ts           # redirección / -> /es
+├── app/
+│   ├── globals.css          # import de Tailwind + tokens del diseño (@theme)
+│   └── [locale]/
+│       ├── layout.tsx       # layout raíz: <html lang>, fuentes, metadata
+│       └── page.tsx         # bitácora pública
+├── components/
+│   ├── PublicNav.tsx        # marca + selector de idioma
+│   ├── LanguageSwitcher.tsx # dropdown (cliente): cambia el segmento de idioma
+│   └── PostCard.tsx         # tarjeta de entrada
+├── lib/
+│   ├── i18n.ts              # idiomas, diccionarios, formato de fechas
+│   └── posts.ts             # entradas de la bitácora (estáticas)
+└── messages/                # es.json · en.json · pt.json
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+El layout raíz vive **dentro** de `[locale]` porque `<html lang>` cambia con el idioma y solo el layout raíz puede emitir la etiqueta `<html>`. Por eso la raíz `/` se resuelve con una redirección en `next.config.ts` y no con una página.
 
-## Deploy on Vercel
+## i18n
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Idiomas: `es` (por defecto), `en`, `pt`. Las 53 claves vienen de los `messages*.properties` de Spring, con los mismos nombres.
+- Los textos se leen en componentes de servidor: los diccionarios **no** viajan al navegador.
+- `lib/i18n.ts` toma el bundle español como referencia: si `en.json` o `pt.json` pierden una clave, el proyecto no compila.
+- Las fechas se localizan con `Intl.DateTimeFormat` (`18 jul 2026` · `Jul 18, 2026` · `18 de jul. de 2026`).
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Estilos
+
+Tailwind v4 se configura desde CSS. Los tokens del diseño original (marca, degradados del hero y de los banners, superficie) viven en el bloque `@theme` de `app/globals.css` y generan sus utilidades: `bg-brand`, `from-hero-1`, `to-accent-2`, etc. No hay Bootstrap ni CSS por componente.
+
+## Entradas de la bitácora
+
+`lib/posts.ts` contiene las entradas. La forma del objeto es la que tendrá `GET /api/posts` en el backend, así que migrar a la API cambia el origen del array y nada más.
+
+## Siguiente paso
+
+Login y zona privada (`user`/`admin`) contra la API JWT del backend. Depende de que el backend publique `POST /api/auth/login`.
