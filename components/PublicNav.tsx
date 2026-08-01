@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BsJournalCode } from "react-icons/bs";
+import { BsBoxArrowInRight, BsJournalCode } from "react-icons/bs";
 
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import type { Dictionary, Locale } from "@/lib/i18n";
@@ -9,7 +9,13 @@ type Props = {
   t: Dictionary;
 };
 
-/** Barra pública de la bitácora: marca + selector de idioma. */
+/**
+ * Barra pública de la bitácora: marca, acceso y selector de idioma.
+ *
+ * No mira la cookie de sesión a propósito: leerla convertiría la bitácora
+ * —prerenderizada en build— en una página dinámica. Si ya hay sesión, es
+ * `/login` quien redirige a la cuenta.
+ */
 export default function PublicNav({ locale, t }: Props) {
   return (
     <nav className="sticky top-0 z-40 bg-slate-900 text-white">
@@ -22,11 +28,21 @@ export default function PublicNav({ locale, t }: Props) {
           <span>{t["nav.brand.blog"]}</span>
         </Link>
 
-        <LanguageSwitcher
-          locale={locale}
-          label={t["nav.language"]}
-          names={{ es: t["lang.es"], en: t["lang.en"], pt: t["lang.pt"] }}
-        />
+        <div className="flex items-center gap-3">
+          <Link
+            href={`/${locale}/login`}
+            className="flex items-center gap-1.5 rounded-md border border-white/20 px-3 py-1.5 text-sm transition hover:bg-white/10"
+          >
+            <BsBoxArrowInRight aria-hidden />
+            {t["nav.login"]}
+          </Link>
+
+          <LanguageSwitcher
+            locale={locale}
+            label={t["nav.language"]}
+            names={{ es: t["lang.es"], en: t["lang.en"], pt: t["lang.pt"] }}
+          />
+        </div>
       </div>
     </nav>
   );

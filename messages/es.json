@@ -58,5 +58,50 @@
   "post.guards.title": "Guards y seguridad mínima",
   "post.guards.summary": "Protegimos las rutas privadas de la aplicación: qué es un guard, cómo decide si un usuario puede entrar y por qué toda app necesita esta capa básica.",
   "post.next.title": "Próximo tema del curso",
-  "post.next.summary": "Esta entrada se publicará cuando veamos el siguiente tema en clase. La bitácora crece con el curso."
+  "post.next.summary": "Esta entrada se publicará cuando veamos el siguiente tema en clase. La bitácora crece con el curso.",
+
+  "auth.field.email": "Correo electrónico",
+  "auth.field.confirmPassword": "Confirmar contraseña",
+
+  "auth.login.subtitle": "Entra con tu usuario para ver tu cuenta.",
+  "auth.login.noAccount": "¿Todavía no tienes cuenta?",
+  "auth.login.createAccount": "Crear una",
+  "auth.login.forgot": "¿Olvidaste tu contraseña?",
+
+  "auth.register.title": "Crear cuenta",
+  "auth.register.subtitle": "Elige un usuario, deja tu correo y una contraseña.",
+  "auth.register.submit": "Registrarme",
+  "auth.register.haveAccount": "¿Ya tienes cuenta?",
+  "auth.register.signIn": "Inicia sesión",
+
+  "auth.forgot.title": "Recuperar contraseña",
+  "auth.forgot.subtitle": "Escribe tu correo y te enviamos un enlace para elegir una contraseña nueva.",
+  "auth.forgot.submit": "Enviar enlace",
+  "auth.forgot.sent": "Si ese correo tiene una cuenta, el enlace ya va en camino. Caduca en 30 minutos.",
+  "auth.forgot.backToLogin": "Volver a iniciar sesión",
+
+  "auth.reset.title": "Nueva contraseña",
+  "auth.reset.subtitle": "Elige la contraseña con la que entrarás a partir de ahora.",
+  "auth.reset.submit": "Guardar contraseña",
+  "auth.reset.done": "Contraseña cambiada. Ya puedes entrar con ella.",
+  "auth.reset.missingToken": "Este enlace está incompleto. Pide otro desde la pantalla de recuperación.",
+  "auth.reset.goToLogin": "Ir a iniciar sesión",
+
+  "auth.account.subtitle": "Esto es lo que la API responde sobre tu sesión.",
+  "auth.account.email": "Correo",
+  "auth.account.invalidSession": "Tu sesión ya no es válida. Cierra sesión y vuelve a entrar.",
+
+  "auth.validation.required": "Este campo es obligatorio.",
+  "auth.validation.username": "Entre 3 y 30 caracteres: letras, dígitos, punto, guion y guion bajo.",
+  "auth.validation.email": "Escribe un correo válido.",
+  "auth.validation.password": "Mínimo 8 caracteres.",
+  "auth.validation.mismatch": "Las dos contraseñas no coinciden.",
+
+  "auth.error.BAD_CREDENTIALS": "Usuario o contraseña incorrectos.",
+  "auth.error.USERNAME_TAKEN": "Ese usuario ya está tomado.",
+  "auth.error.EMAIL_TAKEN": "Ese correo ya tiene una cuenta.",
+  "auth.error.VALIDATION_ERROR": "Revisa los datos del formulario.",
+  "auth.error.INVALID_TOKEN": "El enlace no vale o ya se usó. Pide uno nuevo.",
+  "auth.error.EXPIRED_TOKEN": "El enlace caducó. Pide uno nuevo.",
+  "auth.error.UNEXPECTED": "No pudimos completar la operación. Inténtalo otra vez."
 }

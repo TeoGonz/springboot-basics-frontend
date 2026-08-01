@@ -58,5 +58,50 @@
   "post.guards.title": "Guards e segurança mínima",
   "post.guards.summary": "Protegemos as rotas privadas da aplicação: o que é um guard, como ele decide se um usuário pode entrar e por que toda app precisa dessa camada básica.",
   "post.next.title": "Próximo tema do curso",
-  "post.next.summary": "Esta entrada será publicada quando virmos o próximo tema em aula. O diário cresce com o curso."
+  "post.next.summary": "Esta entrada será publicada quando virmos o próximo tema em aula. O diário cresce com o curso.",
+
+  "auth.field.email": "E-mail",
+  "auth.field.confirmPassword": "Confirmar senha",
+
+  "auth.login.subtitle": "Entre com seu usuário para ver sua conta.",
+  "auth.login.noAccount": "Ainda não tem conta?",
+  "auth.login.createAccount": "Criar uma",
+  "auth.login.forgot": "Esqueceu sua senha?",
+
+  "auth.register.title": "Criar conta",
+  "auth.register.subtitle": "Escolha um usuário, deixe seu e-mail e uma senha.",
+  "auth.register.submit": "Cadastrar",
+  "auth.register.haveAccount": "Já tem conta?",
+  "auth.register.signIn": "Entrar",
+
+  "auth.forgot.title": "Recuperar senha",
+  "auth.forgot.subtitle": "Digite seu e-mail e enviamos um link para escolher uma senha nova.",
+  "auth.forgot.submit": "Enviar link",
+  "auth.forgot.sent": "Se esse e-mail tiver uma conta, o link já está a caminho. Ele expira em 30 minutos.",
+  "auth.forgot.backToLogin": "Voltar para entrar",
+
+  "auth.reset.title": "Nova senha",
+  "auth.reset.subtitle": "Escolha a senha com que você vai entrar de agora em diante.",
+  "auth.reset.submit": "Salvar senha",
+  "auth.reset.done": "Senha alterada. Já pode entrar com ela.",
+  "auth.reset.missingToken": "Este link está incompleto. Peça outro na tela de recuperação.",
+  "auth.reset.goToLogin": "Ir para entrar",
+
+  "auth.account.subtitle": "Isto é o que a API responde sobre sua sessão.",
+  "auth.account.email": "E-mail",
+  "auth.account.invalidSession": "Sua sessão não é mais válida. Saia e entre novamente.",
+
+  "auth.validation.required": "Este campo é obrigatório.",
+  "auth.validation.username": "Entre 3 e 30 caracteres: letras, dígitos, ponto, hífen e sublinhado.",
+  "auth.validation.email": "Digite um e-mail válido.",
+  "auth.validation.password": "No mínimo 8 caracteres.",
+  "auth.validation.mismatch": "As duas senhas não coincidem.",
+
+  "auth.error.BAD_CREDENTIALS": "Usuário ou senha incorretos.",
+  "auth.error.USERNAME_TAKEN": "Esse usuário já está em uso.",
+  "auth.error.EMAIL_TAKEN": "Esse e-mail já tem uma conta.",
+  "auth.error.VALIDATION_ERROR": "Revise os dados do formulário.",
+  "auth.error.INVALID_TOKEN": "O link não vale ou já foi usado. Peça um novo.",
+  "auth.error.EXPIRED_TOKEN": "O link expirou. Peça um novo.",
+  "auth.error.UNEXPECTED": "Não foi possível concluir a operação. Tente novamente."
 }

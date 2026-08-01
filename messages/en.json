@@ -58,5 +58,50 @@
   "post.guards.title": "Guards and minimal security",
   "post.guards.summary": "We protected the app's private routes: what a guard is, how it decides whether a user can enter, and why every app needs this basic layer.",
   "post.next.title": "Next course topic",
-  "post.next.summary": "This entry will be published when we cover the next topic in class. The log grows with the course."
+  "post.next.summary": "This entry will be published when we cover the next topic in class. The log grows with the course.",
+
+  "auth.field.email": "Email address",
+  "auth.field.confirmPassword": "Confirm password",
+
+  "auth.login.subtitle": "Sign in with your username to see your account.",
+  "auth.login.noAccount": "No account yet?",
+  "auth.login.createAccount": "Create one",
+  "auth.login.forgot": "Forgot your password?",
+
+  "auth.register.title": "Create account",
+  "auth.register.subtitle": "Pick a username, leave your email and a password.",
+  "auth.register.submit": "Sign up",
+  "auth.register.haveAccount": "Already have an account?",
+  "auth.register.signIn": "Sign in",
+
+  "auth.forgot.title": "Recover password",
+  "auth.forgot.subtitle": "Type your email and we will send you a link to choose a new password.",
+  "auth.forgot.submit": "Send link",
+  "auth.forgot.sent": "If that email has an account, the link is already on its way. It expires in 30 minutes.",
+  "auth.forgot.backToLogin": "Back to sign in",
+
+  "auth.reset.title": "New password",
+  "auth.reset.subtitle": "Choose the password you will sign in with from now on.",
+  "auth.reset.submit": "Save password",
+  "auth.reset.done": "Password changed. You can sign in with it now.",
+  "auth.reset.missingToken": "This link is incomplete. Request another one from the recovery screen.",
+  "auth.reset.goToLogin": "Go to sign in",
+
+  "auth.account.subtitle": "This is what the API answers about your session.",
+  "auth.account.email": "Email",
+  "auth.account.invalidSession": "Your session is no longer valid. Sign out and sign in again.",
+
+  "auth.validation.required": "This field is required.",
+  "auth.validation.username": "Between 3 and 30 characters: letters, digits, dot, hyphen and underscore.",
+  "auth.validation.email": "Type a valid email address.",
+  "auth.validation.password": "At least 8 characters.",
+  "auth.validation.mismatch": "The two passwords do not match.",
+
+  "auth.error.BAD_CREDENTIALS": "Wrong username or password.",
+  "auth.error.USERNAME_TAKEN": "That username is taken.",
+  "auth.error.EMAIL_TAKEN": "That email already has an account.",
+  "auth.error.VALIDATION_ERROR": "Check the form fields.",
+  "auth.error.INVALID_TOKEN": "The link is not valid or was already used. Request a new one.",
+  "auth.error.EXPIRED_TOKEN": "The link expired. Request a new one.",
+  "auth.error.UNEXPECTED": "We could not complete the operation. Try again."
 }
