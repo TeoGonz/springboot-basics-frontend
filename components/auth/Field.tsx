@@ -1,3 +1,4 @@
+import type { ChangeEvent } from "react";
 import type { IconType } from "react-icons";
 
 type Props = {
@@ -9,6 +10,11 @@ type Props = {
   error?: string;
   autoComplete?: string;
   defaultValue?: string;
+  /** Con value/onChange la casilla pasa a controlada — ver `useValidatedForm`. */
+  value?: string;
+  onChange?: (event: ChangeEvent<HTMLInputElement>) => void;
+  onBlur?: () => void;
+  required?: boolean;
 };
 
 /** Casilla de formulario: etiqueta, icono, campo y línea de error. */
@@ -20,6 +26,10 @@ export default function Field({
   error,
   autoComplete,
   defaultValue,
+  value,
+  onChange,
+  onBlur,
+  required,
 }: Props) {
   const errorId = `${name}-error`;
 
@@ -40,6 +50,10 @@ export default function Field({
           type={type}
           autoComplete={autoComplete}
           defaultValue={defaultValue}
+          value={value}
+          onChange={onChange}
+          onBlur={onBlur}
+          required={required}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? errorId : undefined}
           className={`focus:border-brand focus:ring-brand/30 w-full rounded-md border py-2 pr-3 pl-9 text-sm outline-none focus:ring-2 ${
@@ -49,7 +63,7 @@ export default function Field({
       </div>
 
       {error && (
-        <p id={errorId} className="mt-1 text-xs text-red-600">
+        <p id={errorId} role="alert" className="mt-1 text-xs text-red-600">
           {error}
         </p>
       )}

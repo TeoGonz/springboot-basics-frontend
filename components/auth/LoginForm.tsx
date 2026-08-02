@@ -9,6 +9,15 @@ import Field from "@/components/auth/Field";
 import FormError from "@/components/auth/FormError";
 import SubmitButton from "@/components/auth/SubmitButton";
 import type { Dictionary, Locale } from "@/lib/i18n";
+import { useValidatedForm } from "@/lib/useValidatedForm";
+
+/**
+ * Entrar solo exige que los dos campos vengan llenos. Aplicar aquí el formato
+ * de usuario del registro publicaría cómo son los nombres válidos y dejaría
+ * fuera a cuentas creadas antes de esa regla.
+ */
+const required = (value: string) =>
+  value.trim() ? null : ("auth.validation.required" as const);
 
 export default function LoginForm({
   locale,
@@ -18,32 +27,33 @@ export default function LoginForm({
   t: Dictionary;
 }) {
   const [state, action] = useActionState(login, undefined);
+  const { fieldProps, handleSubmit } = useValidatedForm({
+    rules: { username: required, password: required },
+    serverErrors: state?.fieldErrors,
+    t,
+  });
 
   return (
-    <form action={action} noValidate>
+    <form action={action} onSubmit={handleSubmit} noValidate>
       {/* La acción no sabe en qué idioma está la página; el campo se lo dice. */}
       <input type="hidden" name="locale" value={locale} />
 
       {state?.errorKey && <FormError message={t[state.errorKey]} />}
 
       <Field
-        name="username"
+        {...fieldProps("username")}
         label={t["login.username"]}
         icon={BsPerson}
         autoComplete="username"
-        error={
-          state?.fieldErrors?.username && t[state.fieldErrors.username]
-        }
+        required
       />
       <Field
-        name="password"
+        {...fieldProps("password")}
         label={t["login.password"]}
         type="password"
         icon={BsLock}
         autoComplete="current-password"
-        error={
-          state?.fieldErrors?.password && t[state.fieldErrors.password]
-        }
+        required
       />
 
       <SubmitButton label={t["login.submit"]} />

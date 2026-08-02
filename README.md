@@ -58,6 +58,19 @@ Cerrar sesión borra la cookie. El token sigue siendo válido en el servidor has
 
 Los errores llegan como códigos (`BAD_CREDENTIALS`, `EMAIL_TAKEN`, `EXPIRED_TOKEN`…) y el front los traduce con sus propias claves: la API no tiene i18n.
 
+## Validación de los formularios
+
+Las reglas viven una sola vez, en `lib/validation.ts`, y las usan los dos lados:
+
+- **En el navegador** (`lib/useValidatedForm.ts`, en entrar y crear cuenta): el campo se valida al salir de él y en cada tecla una vez que ya falló, y un envío inválido no llega a salir. Es comodidad; se desactiva apagando JavaScript.
+- **En el servidor** (`app/actions/auth.ts`): la acción vuelve a validarlo todo antes de llamar a la API. Aquí se decide.
+
+Sin JavaScript los formularios siguen funcionando: React deja los campos ocultos que hacen falta, la acción se ejecuta con el envío normal del navegador y los mismos mensajes se pintan bajo las casillas.
+
+Entrar solo comprueba que los campos vengan llenos. Exigir ahí el formato de usuario publicaría cómo son los nombres válidos y rechazaría cuentas anteriores a esa regla.
+
+`confirmPassword` no viaja a la API: la segunda casilla es una ayuda contra erratas, así que se comprueba donde se escribe.
+
 ## Estructura
 
 ```
@@ -80,6 +93,7 @@ front-react-project/
 │   ├── api.ts               # cliente de la API (solo servidor) + tipos de respuesta
 │   ├── session.ts           # cookie de sesión: crear, leer, borrar
 │   ├── validation.ts        # reglas de los campos, espejo del backend
+│   ├── useValidatedForm.ts  # las mismas reglas en el navegador (blur, envío)
 │   ├── i18n.ts              # idiomas, diccionarios, formato de fechas
 │   └── posts.ts             # entradas de la bitácora (estáticas)
 └── messages/                # es.json · en.json · pt.json
