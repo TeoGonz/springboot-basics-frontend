@@ -31,3 +31,16 @@ export function formatDate(isoDate: string, locale: Locale): string {
     year: "numeric",
   }).format(new Date(`${isoDate}T00:00:00`));
 }
+
+/**
+ * Precios del catálogo de la tienda. La API los da en dólares y sin decimales;
+ * lo que cambia con el idioma es dónde va el símbolo y cómo se agrupan los
+ * miles (`$1,999` · `1999 US$`).
+ */
+export function formatPrice(amount: number, locale: Locale): string {
+  return new Intl.NumberFormat(locale, {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }).format(amount);
+}

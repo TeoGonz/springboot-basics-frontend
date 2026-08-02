@@ -2,7 +2,7 @@
 
 Front de la **bitácora del curso** en **Next.js 16** (App Router). Es la única capa HTML del proyecto: el backend Spring (`springboot_java_project/`, repositorio hermano) es una **API REST pura** y no sirve vistas.
 
-La bitácora pública sigue siendo **estática** (se renderiza en build). Las pantallas de autenticación —entrar, registrarse, recuperar contraseña y cuenta— **sí** hablan con la API.
+La bitácora pública sigue siendo **estática** (se renderiza en build). Las pantallas de autenticación —entrar, registrarse, recuperar contraseña y cuenta— **sí** hablan con la API. El simulador de tienda habla con una API pública de terceros, no con la nuestra.
 
 ## Stack
 
@@ -39,8 +39,10 @@ La bitácora pública funciona sin backend. Las pantallas de autenticación nece
 | `/{idioma}/forgot-password` | Pedir el enlace de recuperación por correo |
 | `/{idioma}/reset-password?token=…` | Destino del enlace del correo: elegir contraseña nueva |
 | `/{idioma}/account` | Zona privada: lo que devuelve `GET /api/me` + cerrar sesión |
+| `/{idioma}/store` | Simulador de tienda: rejilla de productos con los filtros en la URL |
+| `/{idioma}/store/{id}` | Ficha de un producto |
 
-`{idioma}` es `es`, `en` o `pt`; cualquier otro devuelve 404 (`dynamicParams = false`). Los segmentos de ruta están en inglés en los tres idiomas: traducirlos exigiría un mapa de rutas por idioma sin ganar nada.
+`{idioma}` es `es`, `en` o `pt`; cualquier otro devuelve 404 (`dynamicParams = false` en el layout). El `{id}` de la tienda vuelve a abrirlo (`dynamicParams = true`): el catálogo lo llena un tercero, así que no hay lista de ids que prerenderizar. Los segmentos de ruta están en inglés en los tres idiomas: traducirlos exigiría un mapa de rutas por idioma sin ganar nada.
 
 Con sesión abierta, `login`, `register` y `forgot-password` redirigen a `/{idioma}/account`. Sin sesión, `account` redirige a `login`.
 
@@ -57,6 +59,29 @@ Como quien llama a la API es Node y no el navegador, **no hace falta CORS** en e
 Cerrar sesión borra la cookie. El token sigue siendo válido en el servidor hasta que caduca: una sesión sin estado no se puede revocar.
 
 Los errores llegan como códigos (`BAD_CREDENTIALS`, `EMAIL_TAKEN`, `EXPIRED_TOKEN`…) y el front los traduce con sus propias claves: la API no tiene i18n.
+
+## Simulador de tienda
+
+`/{idioma}/store` es un escaparate de solo lectura contra la [Platzi Fake Store](https://api.escuelajs.co), una API pública de ejemplo. **No toca el backend de Spring** ni la sesión: es otro consumidor de otra API que resulta que se pinta en la misma app. Su cliente vive aparte, en `lib/store-api.ts`, porque quiere justo lo contrario que `lib/api.ts`: aquél no cachea nada porque lleva credenciales, éste cachea 60 s porque el catálogo es igual para todo el mundo.
+
+**Los filtros viven en la URL** — `?category=clothes&q=hoodie&min=10&max=100&page=2` — y se resuelven en el servidor, como el resto de la app. El formulario es un `<form method="get">` que apunta a su propia ruta: enviarlo **es** la navegación. No hay un solo componente de cliente, así que funciona con JavaScript apagado, el enlace se puede compartir y el botón de atrás hace lo que debe. Y como `page` no es un campo del formulario, cambiar un filtro vuelve a la página 1 gratis. El precio es un salto de página completo por filtro aplicado, aceptable para un catálogo.
+
+La API tiene cuatro rarezas que la implementación tiene en cuenta:
+
+| Lo que hace la API | Lo que hace el front |
+|---|---|
+| Los parámetros solo se aplican **por parejas** (`price_min` suelto se ignora, igual que `offset` sin `limit`) | Los extremos del precio viajan los dos o ninguno; rellenar solo uno completa el otro |
+| `price_min=0` es *falsy* en el servidor y anula el filtro | El suelo del precio es **1**; ningún producto cuesta 0 |
+| No hay total: la respuesta es un array pelado, sin `X-Total-Count` | **Anterior/siguiente**, sin números de página. Se piden 13 productos y se pintan 12: el sobrante responde a "¿hay más?" |
+| Un id inexistente responde **400** con `EntityNotFoundError`, no 404 | `getProduct` devuelve `null` y la ficha pinta "producto no encontrado" |
+
+Cualquier cosa ininteligible en la query string (`?min=abc`, `?page=-4`) se trata como ausente en vez de reenviarla: la API responde 400 a un precio que no es un número.
+
+**El catálogo está sucio y el diseño lo asume.** Es un sandbox donde cualquiera puede publicar: hoy hay ~100 categorías de las que solo 5 son las de la semilla, productos llamados `phone_17856480419` e imágenes que no son URLs. Por eso el desplegable enseña solo `?limit=5` (las cinco categorías reales, ids 1–5 — el coste es que una categoría nueva y legítima tampoco aparecería) y por eso las imágenes pasan por un saneador que descarta lo que no empiece por `http` y pinta un hueco en su lugar. Tampoco se usa `next/image`: exige declarar los dominios permitidos en `next.config.ts`, y los de un sandbox abierto no son una lista fija.
+
+**Los textos de los productos se quedan en inglés.** La chrome (`store.*`) sí está traducida, pero el catálogo no es nuestro y la API no tiene i18n. La página lo dice, para que `/pt` con nombres en inglés se lea como una decisión y no como un olvido. Los precios sí se localizan (`6911 US$` · `$6,911` · `US$ 6.911`).
+
+Si la API no contesta —vive en un dyno gratuito que se duerme— cada llamada corta a los 8 s y la página muestra un aviso en lugar de una traza.
 
 ## Validación de los formularios
 
@@ -84,17 +109,20 @@ front-react-project/
 │       ├── layout.tsx       # layout raíz: <html lang>, fuentes, metadata
 │       ├── page.tsx         # bitácora pública (estática)
 │       ├── login/, register/, forgot-password/, reset-password/, account/
+│       └── store/           # rejilla con filtros + [id]/ con la ficha
 ├── components/
-│   ├── PublicNav.tsx        # marca + acceso + selector de idioma
+│   ├── PublicNav.tsx        # marca + tienda + acceso + selector de idioma
 │   ├── LanguageSwitcher.tsx # dropdown (cliente): cambia el segmento de idioma
 │   ├── PostCard.tsx         # tarjeta de entrada
-│   └── auth/                # AuthCard, Field, FormError, SubmitButton + los 4 formularios
+│   ├── auth/                # AuthCard, Field, FormError, SubmitButton + los 4 formularios
+│   └── store/               # StoreFilters, ProductCard, ProductImage, Pagination
 ├── lib/
-│   ├── api.ts               # cliente de la API (solo servidor) + tipos de respuesta
+│   ├── api.ts               # cliente de la API de Spring (solo servidor) + tipos
+│   ├── store-api.ts         # cliente de la Platzi Fake Store: tipos, query, saneado
 │   ├── session.ts           # cookie de sesión: crear, leer, borrar
 │   ├── validation.ts        # reglas de los campos, espejo del backend
 │   ├── useValidatedForm.ts  # las mismas reglas en el navegador (blur, envío)
-│   ├── i18n.ts              # idiomas, diccionarios, formato de fechas
+│   ├── i18n.ts              # idiomas, diccionarios, formato de fechas y precios
 │   └── posts.ts             # entradas de la bitácora (estáticas)
 └── messages/                # es.json · en.json · pt.json
 ```
@@ -105,10 +133,11 @@ El layout raíz vive **dentro** de `[locale]` porque `<html lang>` cambia con el
 
 ## i18n
 
-- Idiomas: `es` (por defecto), `en`, `pt`. Las claves originales vienen de los `messages*.properties` de Spring, con los mismos nombres; las de autenticación se añadieron bajo `auth.*`.
+- Idiomas: `es` (por defecto), `en`, `pt`. Las claves originales vienen de los `messages*.properties` de Spring, con los mismos nombres; las de autenticación se añadieron bajo `auth.*` y las de la tienda bajo `store.*`.
 - Los textos se leen en componentes de servidor: los diccionarios **no** viajan al navegador (los formularios reciben solo el suyo).
 - `lib/i18n.ts` toma el bundle español como referencia: si `en.json` o `pt.json` pierden una clave, el proyecto no compila.
-- Las fechas se localizan con `Intl.DateTimeFormat` (`18 jul 2026` · `Jul 18, 2026` · `18 de jul. de 2026`).
+- Las fechas se localizan con `Intl.DateTimeFormat` (`18 jul 2026` · `Jul 18, 2026` · `18 de jul. de 2026`) y los precios con `Intl.NumberFormat` (`6911 US$` · `$6,911` · `US$ 6.911`).
+- Lo que llega de una API ajena no se traduce: los nombres y descripciones del catálogo se quedan en inglés, y la página lo dice.
 
 ## Estilos
 
