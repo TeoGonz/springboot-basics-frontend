@@ -31,10 +31,11 @@
   "user.roles": "Your roles:",
 
   "admin.title": "Administration area",
+  "admin.subtitle": "Protected route: your role is checked before it is shown.",
   "admin.greeting": "Hello",
   "admin.note": "Only accessible with ADMIN role.",
 
-  "denied.title": "403 · Access denied",
+  "denied.title": "Access denied",
   "denied.body.pre": "You are authenticated as",
   "denied.body.post": "but your role does not allow access to this page.",
   "denied.back": "Back to my area",
@@ -91,6 +92,7 @@
   "auth.account.subtitle": "This is what the API answers about your session.",
   "auth.account.email": "Email",
   "auth.account.invalidSession": "Your session is no longer valid. Sign out and sign in again.",
+  "auth.account.adminLink": "Go to the administration area",
 
   "auth.validation.required": "This field is required.",
   "auth.validation.username": "Between 3 and 30 characters: letters, digits, dot, hyphen and underscore.",

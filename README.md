@@ -39,12 +39,15 @@ La bitácora pública funciona sin backend. Las pantallas de autenticación nece
 | `/{idioma}/forgot-password` | Pedir el enlace de recuperación por correo |
 | `/{idioma}/reset-password?token=…` | Destino del enlace del correo: elegir contraseña nueva |
 | `/{idioma}/account` | Zona privada: lo que devuelve `GET /api/me` + cerrar sesión |
+| `/{idioma}/admin` | Zona de administración: solo con `ROLE_ADMIN`; con otro rol, aviso y enlace a `account` |
 | `/{idioma}/store` | Simulador de tienda: rejilla de productos con los filtros en la URL |
 | `/{idioma}/store/{id}` | Ficha de un producto |
 
 `{idioma}` es `es`, `en` o `pt`; cualquier otro devuelve 404 (`dynamicParams = false` en el layout). El `{id}` de la tienda vuelve a abrirlo (`dynamicParams = true`): el catálogo lo llena un tercero, así que no hay lista de ids que prerenderizar. Los segmentos de ruta están en inglés en los tres idiomas: traducirlos exigiría un mapa de rutas por idioma sin ganar nada.
 
-Con sesión abierta, `login`, `register` y `forgot-password` redirigen a `/{idioma}/account`. Sin sesión, `account` redirige a `login`.
+Con sesión abierta, `login`, `register` y `forgot-password` redirigen a `/{idioma}/account`. Sin sesión, `account` y `admin` redirigen a `login`.
+
+`admin` decide con los roles que devuelve `GET /api/me`, no con el JWT leído en el front: quién eres lo sigue diciendo Spring. Un rol sin `ROLE_ADMIN` recibe el aviso y un enlace a `account`, nunca una redirección automática. El enlace a `admin` está en `account` y se ofrece con cualquier rol, a propósito: pulsarlo como `user` es la forma de ver la restricción funcionando. Aviso de alcance: mientras la página no muestre datos, esta comprobación es de renderizado, no de acceso; el día que muestre algo real tiene que apoyarse en un endpoint `/api/admin/**` que la API rechace.
 
 ## Autenticación
 
@@ -109,6 +112,7 @@ front-react-project/
 │       ├── layout.tsx       # layout raíz: <html lang>, fuentes, metadata
 │       ├── page.tsx         # bitácora pública (estática)
 │       ├── login/, register/, forgot-password/, reset-password/, account/
+│       ├── admin/            # zona restringida a ROLE_ADMIN
 │       └── store/           # rejilla con filtros + [id]/ con la ficha
 ├── components/
 │   ├── PublicNav.tsx        # marca + tienda + acceso + selector de idioma
@@ -129,7 +133,7 @@ front-react-project/
 
 El layout raíz vive **dentro** de `[locale]` porque `<html lang>` cambia con el idioma y solo el layout raíz puede emitir la etiqueta `<html>`. Por eso la raíz `/` se resuelve con una redirección en `next.config.ts` y no con una página.
 
-`PublicNav` no lee la cookie a propósito: hacerlo convertiría la bitácora prerenderizada en una página dinámica.
+`PublicNav` no lee la cookie a propósito: hacerlo convertiría la bitácora prerenderizada en una página dinámica. De ahí que el enlace a `admin` esté en `account` y no en la barra.
 
 ## i18n
 
@@ -149,4 +153,4 @@ Tailwind v4 se configura desde CSS. Los tokens del diseño original (marca, degr
 
 ## Siguiente paso
 
-Sustituir las entradas estáticas por `GET /api/posts` y añadir la zona de administración (`ROLE_ADMIN`) contra `/api/admin/**`.
+Sustituir las entradas estáticas por `GET /api/posts`, y dar contenido real a `admin` contra `/api/admin/**` — hoy la ruta existe y restringe el renderizado, pero detrás no hay ningún endpoint que la API proteja.

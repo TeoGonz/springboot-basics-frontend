@@ -31,10 +31,11 @@
   "user.roles": "Tus roles:",
 
   "admin.title": "Zona de administración",
+  "admin.subtitle": "Ruta protegida: se comprueba tu rol antes de mostrarla.",
   "admin.greeting": "Hola",
   "admin.note": "Solo accesible con rol ADMIN.",
 
-  "denied.title": "403 · Acceso denegado",
+  "denied.title": "Acceso denegado",
   "denied.body.pre": "Estás autenticado como",
   "denied.body.post": "pero tu rol no permite acceder a esta página.",
   "denied.back": "Volver a mi zona",
@@ -91,6 +92,7 @@
   "auth.account.subtitle": "Esto es lo que la API responde sobre tu sesión.",
   "auth.account.email": "Correo",
   "auth.account.invalidSession": "Tu sesión ya no es válida. Cierra sesión y vuelve a entrar.",
+  "auth.account.adminLink": "Ir a la zona de administración",
 
   "auth.validation.required": "Este campo es obligatorio.",
   "auth.validation.username": "Entre 3 y 30 caracteres: letras, dígitos, punto, guion y guion bajo.",

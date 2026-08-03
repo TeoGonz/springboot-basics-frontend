@@ -31,10 +31,11 @@
   "user.roles": "Seus papéis:",
 
   "admin.title": "Área de administração",
+  "admin.subtitle": "Rota protegida: seu papel é verificado antes de exibi-la.",
   "admin.greeting": "Olá",
   "admin.note": "Acessível apenas com papel ADMIN.",
 
-  "denied.title": "403 · Acesso negado",
+  "denied.title": "Acesso negado",
   "denied.body.pre": "Você está autenticado como",
   "denied.body.post": "mas seu papel não permite acessar esta página.",
   "denied.back": "Voltar à minha área",
@@ -91,6 +92,7 @@
   "auth.account.subtitle": "Isto é o que a API responde sobre sua sessão.",
   "auth.account.email": "E-mail",
   "auth.account.invalidSession": "Sua sessão não é mais válida. Saia e entre novamente.",
+  "auth.account.adminLink": "Ir para a área de administração",
 
   "auth.validation.required": "Este campo é obrigatório.",
   "auth.validation.username": "Entre 3 e 30 caracteres: letras, dígitos, ponto, hífen e sublinhado.",
