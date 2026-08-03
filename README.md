@@ -2,7 +2,7 @@
 
 Front de la **bitácora del curso** en **Next.js 16** (App Router). Es la única capa HTML del proyecto: el backend Spring (`springboot_java_project/`, repositorio hermano) es una **API REST pura** y no sirve vistas.
 
-La bitácora pública sigue siendo **estática** (se renderiza en build). Las pantallas de autenticación —entrar, registrarse, recuperar contraseña y cuenta— **sí** hablan con la API. El simulador de tienda habla con una API pública de terceros, no con la nuestra.
+Las entradas de la bitácora son **estáticas** —viven en el código, no en la API—, pero todas las páginas se **renderizan por petición**: la barra común lee la cookie de sesión para rotular el botón de acceso con el nombre de quien entró, y eso descarta el prerenderizado. Las pantallas de autenticación, la cuenta y la zona de administración **sí** hablan con la API. El simulador de tienda habla con una API pública de terceros, no con la nuestra.
 
 ## Stack
 
@@ -21,7 +21,7 @@ La bitácora pública sigue siendo **estática** (se renderiza en build). Las pa
 npm install
 cp .env.example .env.local     # API_BASE_URL=http://localhost:8080
 npm run dev                    # http://localhost:3000 -> redirige a /es
-npm run build                  # /es, /en y /pt como HTML estático
+npm run build                  # compila; las páginas se sirven por petición
 npm start                      # sirve el build
 npm run lint
 ```
@@ -110,12 +110,12 @@ front-react-project/
 │   ├── actions/auth.ts      # Server Actions: login, register, forgot, reset, logout
 │   └── [locale]/
 │       ├── layout.tsx       # layout raíz: <html lang>, fuentes, metadata
-│       ├── page.tsx         # bitácora pública (estática)
+│       ├── page.tsx         # bitácora pública (entradas estáticas)
 │       ├── login/, register/, forgot-password/, reset-password/, account/
 │       ├── admin/            # zona restringida a ROLE_ADMIN
 │       └── store/           # rejilla con filtros + [id]/ con la ficha
 ├── components/
-│   ├── PublicNav.tsx        # marca + tienda + acceso + selector de idioma
+│   ├── PublicNav.tsx        # marca + tienda + acceso (nombre si hay sesión) + idioma
 │   ├── LanguageSwitcher.tsx # dropdown (cliente): cambia el segmento de idioma
 │   ├── PostCard.tsx         # tarjeta de entrada
 │   ├── auth/                # AuthCard, Field, FormError, SubmitButton + los 4 formularios
@@ -123,7 +123,7 @@ front-react-project/
 ├── lib/
 │   ├── api.ts               # cliente de la API de Spring (solo servidor) + tipos
 │   ├── store-api.ts         # cliente de la Platzi Fake Store: tipos, query, saneado
-│   ├── session.ts           # cookie de sesión: crear, leer, borrar
+│   ├── session.ts           # cookie de sesión: crear, leer (exp + sub), borrar
 │   ├── validation.ts        # reglas de los campos, espejo del backend
 │   ├── useValidatedForm.ts  # las mismas reglas en el navegador (blur, envío)
 │   ├── i18n.ts              # idiomas, diccionarios, formato de fechas y precios
@@ -133,7 +133,7 @@ front-react-project/
 
 El layout raíz vive **dentro** de `[locale]` porque `<html lang>` cambia con el idioma y solo el layout raíz puede emitir la etiqueta `<html>`. Por eso la raíz `/` se resuelve con una redirección en `next.config.ts` y no con una página.
 
-`PublicNav` no lee la cookie a propósito: hacerlo convertiría la bitácora prerenderizada en una página dinámica. De ahí que el enlace a `admin` esté en `account` y no en la barra.
+`PublicNav` lee la cookie de sesión: con sesión abierta el botón de acceso muestra el nombre del claim `sub` del token y apunta a `account`; sin ella, el texto de entrar y `login`. No hay llamada a la API para saber el nombre, porque el token ya está en la cookie, y de ese valor no cuelga ningún permiso: es un rótulo. A cambio, ninguna página con la barra se prerenderiza — la bitácora incluida. El enlace a `admin` sigue en `account`, para no llenar la barra de rutas privadas.
 
 ## i18n
 

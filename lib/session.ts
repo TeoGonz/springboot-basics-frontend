@@ -16,6 +16,8 @@ export type Session = {
   token: string;
   /** Milisegundos desde epoch, leídos del claim `exp`. */
   expiresAt: number;
+  /** Del claim `sub`. Es una etiqueta para la barra, no una identidad de la que colgar permisos. */
+  username: string;
 };
 
 export async function createSession(token: string, maxAgeMs: number) {
@@ -47,21 +49,31 @@ export async function getSession(): Promise<Session | null> {
   const token = (await cookies()).get(COOKIE_NAME)?.value;
   if (!token) return null;
 
-  const expiresAt = expiryOf(token);
-  if (expiresAt === null || expiresAt <= Date.now()) return null;
+  const claims = claimsOf(token);
+  if (claims === null || claims.expiresAt <= Date.now()) return null;
 
-  return { token, expiresAt };
+  return { token, ...claims };
 }
 
-/** Lee el claim `exp` (en segundos) del payload del JWT. */
-function expiryOf(token: string): number | null {
+/**
+ * Lee `exp` (en segundos) y `sub` del payload del JWT.
+ *
+ * Que falte `sub` no invalida la sesión: solo se usa para rotular la barra, y
+ * quedarse sin nombre no es motivo para echar a nadie. Falta `exp` sí, porque de
+ * ahí depende saber si el token sirve.
+ */
+function claimsOf(
+  token: string,
+): { expiresAt: number; username: string } | null {
   const payload = token.split(".")[1];
   if (!payload) return null;
 
   try {
     const json = Buffer.from(payload, "base64url").toString("utf8");
-    const exp = (JSON.parse(json) as { exp?: number }).exp;
-    return typeof exp === "number" ? exp * 1000 : null;
+    const { exp, sub } = JSON.parse(json) as { exp?: number; sub?: string };
+    if (typeof exp !== "number") return null;
+
+    return { expiresAt: exp * 1000, username: typeof sub === "string" ? sub : "" };
   } catch {
     return null;
   }
