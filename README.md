@@ -71,32 +71,29 @@ Los errores llegan como códigos (`BAD_CREDENTIALS`, `EMAIL_TAKEN`, `EXPIRED_TOK
 
 ## Simulador de tienda
 
-`/{idioma}/store` es un escaparate de solo lectura contra la [Platzi Fake Store](https://api.escuelajs.co), una API pública de ejemplo. **No toca el backend de Spring** ni la sesión: es otro consumidor de otra API que resulta que se pinta en la misma app. Su cliente vive aparte, en `lib/store-api.ts`, porque quiere justo lo contrario que `lib/api.ts`: aquél no cachea nada porque lleva credenciales, éste cachea 60 s porque el catálogo es igual para todo el mundo.
+`/{idioma}/store` es un escaparate de solo lectura contra [DummyJSON](https://dummyjson.com), una API pública de ejemplo. **No toca el backend de Spring** ni la sesión: es otro consumidor de otra API que resulta que se pinta en la misma app. Su cliente vive aparte, en `lib/store-api.ts`, porque quiere justo lo contrario que `lib/api.ts`: aquél no cachea nada porque lleva credenciales, éste cachea 300 s porque el catálogo es igual para todo el mundo.
 
-**Los filtros viven en la URL** — `?category=clothes&q=hoodie&min=10&max=100&page=2` — y se resuelven en el servidor, como el resto de la app. El formulario es un `<form method="get">` que apunta a su propia ruta: enviarlo **es** la navegación. No hay un solo componente de cliente, así que funciona con JavaScript apagado, el enlace se puede compartir y el botón de atrás hace lo que debe. Y como `page` no es un campo del formulario, cambiar un filtro vuelve a la página 1 gratis. El precio es un salto de página completo por filtro aplicado, aceptable para un catálogo.
+**Los filtros viven en la URL** — `?category=mens-watches&q=watch&min=100&max=1000&page=2` — y se resuelven en el servidor, como el resto de la app. El formulario es un `<form method="get">` que apunta a su propia ruta: enviarlo **es** la navegación. No hay un solo componente de cliente, así que funciona con JavaScript apagado, el enlace se puede compartir y el botón de atrás hace lo que debe. Y como `page` no es un campo del formulario, cambiar un filtro vuelve a la página 1 gratis. El precio es un salto de página completo por filtro aplicado, aceptable para un catálogo.
 
-La API tiene cuatro rarezas que la implementación tiene en cuenta:
+**Los cuatro filtros se aplican aquí, no en la API.** La tienda los combina en AND y la API no sabe hacer eso: no tiene ningún parámetro de precio, y `q` junto a `category` descarta la categoría en silencio. Así que se pide el catálogo entero en una llamada —194 productos, 68 KB porque `select` deja fuera los campos que no se pintan—, se cachea 300 s y se filtra y se pagina en memoria. Abrir una ficha no cuesta ninguna petición extra: sale del mismo catálogo, así que no puede contradecir a la rejilla desde la que se abrió.
 
-| Lo que hace la API | Lo que hace el front |
-|---|---|
-| Los parámetros solo se aplican **por parejas** (`price_min` suelto se ignora, igual que `offset` sin `limit`) | Los extremos del precio viajan los dos o ninguno; rellenar solo uno completa el otro |
-| `price_min=0` es *falsy* en el servidor y anula el filtro | El suelo del precio es **1**; ningún producto cuesta 0 |
-| No hay total: la respuesta es un array pelado, sin `X-Total-Count` | **Anterior/siguiente**, sin números de página. Se piden 13 productos y se pintan 12: el sobrante responde a "¿hay más?" |
-| Un id inexistente responde **400** con `EntityNotFoundError`, no 404 | `getProduct` devuelve `null` y la ficha pinta "producto no encontrado" |
+Esa decisión **tiene fecha de caducidad y conviene nombrarla**: se sostiene porque el catálogo es pequeño y fijo. Uno de varios miles de productos le da la vuelta al cálculo, y entonces el filtrado vuelve al servidor de la API aceptando que los filtros dejen de combinarse.
 
-Cualquier cosa ininteligible en la query string (`?min=abc`, `?page=-4`) se trata como ausente en vez de reenviarla: la API responde 400 a un precio que no es un número.
+Cualquier cosa ininteligible en la query string (`?min=abc`, `?page=-4`, `?category=noexiste`) se trata como ausente. La categoría se valida contra la lista real antes de aplicarse, así que una inventada devuelve el catálogo completo en lugar de una rejilla vacía.
 
-**El catálogo está sucio y el diseño lo asume.** Es un sandbox donde cualquiera puede publicar: hoy hay ~100 categorías de las que solo 5 son las de la semilla, productos llamados `phone_17856480419` e imágenes que no son URLs. Por eso el desplegable enseña solo `?limit=5` (las cinco categorías reales, ids 1–5 — el coste es que una categoría nueva y legítima tampoco aparecería) y por eso las imágenes pasan por un saneador que descarta lo que no empiece por `http` y pinta un hueco en su lugar. Tampoco se usa `next/image`: exige declarar los dominios permitidos en `next.config.ts`, y los de un sandbox abierto no son una lista fija.
+La paginación es **anterior/siguiente**, sin números de página: la respuesta trae un `total` que los haría posibles, pero numerar es una pantalla distinta, no una adaptación.
 
-**Los textos de los productos se quedan en inglés.** La chrome (`store.*`) sí está traducida, pero el catálogo no es nuestro y la API no tiene i18n. La página lo dice, para que `/pt` con nombres en inglés se lea como una decisión y no como un olvido. Los precios sí se localizan (`6911 US$` · `$6,911` · `US$ 6.911`).
+Las imágenes pasan por un saneador que descarta lo que no empiece por `http`. Hoy todas viven en `cdn.dummyjson.com` y el guardia parece de sobra; se queda porque también pinta las URLs congeladas en pedidos viejos, que son de cuando el catálogo era otro. Tampoco se usa `next/image`: exige declarar los dominios permitidos en `next.config.ts`.
 
-Si la API no contesta —vive en un dyno gratuito que se duerme— cada llamada corta a los 8 s y la página muestra un aviso en lugar de una traza.
+**Los textos de los productos se quedan en inglés.** La chrome (`store.*`) sí está traducida, pero el catálogo no es nuestro y la API no tiene i18n. La página lo dice, para que `/pt` con nombres en inglés se lea como una decisión y no como un olvido. Los precios sí se localizan, **siempre con céntimos** (`1.499,99 US$` · `$1,499.99`): el catálogo los trae, y redondear a unidades enseñaría un `3 × 9.99 = 30 US$` contra un total real de `29,97`.
+
+Si la API no contesta, cada llamada corta a los 8 s y la página muestra un aviso en lugar de una traza.
 
 ## Carrito y pedidos
 
 El carrito **no es un recurso del backend**: es un borrador que pertenece a este navegador. Vive en la cookie `bitacora_cart` —`httpOnly`, `sameSite=lax`, 7 días, `secure` en producción, la misma forma que la de sesión— y no llega a Spring hasta que es un pedido cerrado. Así la API no guarda un estado a medias que nadie consulta, y un visitante anónimo puede llenar el carrito y tener que identificarse solo al final.
 
-**Guarda una copia del producto, no su id**: `productId`, título, precio, imagen y cantidad — los mismos cinco campos que `order_item` congela en el backend. El catálogo es un sandbox que cualquiera puede reescribir, y un carrito que lo releyera cambiaría sus propios precios entre la rejilla y el checkout. De regalo, `/cart` se pinta sin una sola llamada a la tienda.
+**Guarda una copia del producto, no su id**: `productId`, título, precio, imagen y cantidad — los mismos cinco campos que `order_item` congela en el backend. El catálogo es de un tercero que puede reescribirlo cuando quiera, y un carrito que lo releyera cambiaría sus propios precios entre la rejilla y el checkout. De regalo, `/cart` se pinta sin una sola llamada a la tienda.
 
 | Límite | Valor | Por qué |
 |---|---|---|
@@ -120,7 +117,7 @@ El detalle enseña el **mapa de estado**: tres pasos (`PREPARING` · `SHIPPED` �
 
 **Ni sondeo ni componentes de cliente.** El estado lo mueve un administrador horas después, así que la forma de refrescar es recargar y la página lo dice. Un temporizador en el navegador para cazar un evento que ocurre dos veces por pedido no compensa.
 
-Las líneas salen del pedido, **nunca del catálogo**: por eso el backend guardó una copia. Un producto renombrado o borrado en Platzi no reescribe lo que el cliente compró.
+Las líneas salen del pedido, **nunca del catálogo**: por eso el backend guardó una copia. Un producto renombrado o borrado en DummyJSON no reescribe lo que el cliente compró.
 
 La propiedad la comprueba Spring, no esta página. Un pedido ajeno responde `404`, igual que uno inexistente, y las dos cosas se pintan iguales: distinguirlas confirmaría qué ids existen. Ese "no encontrado" se pinta **dentro** de la página —no con `notFound()`— porque la 404 de Next vive fuera del layout de idioma y perdería la barra y el idioma. Si el token de la cookie sigue ahí pero la API lo rechaza, sale el mismo aviso de sesión caducada que `account`, con el botón de cerrar sesión: redirigir a `login` con la cookie puesta sería un bucle.
 
@@ -181,7 +178,7 @@ front-react-project/
 ├── lib/
 │   ├── api.ts               # cliente de la API de Spring (solo servidor) + tipos
 │   ├── cart.ts              # cookie del carrito: leer, escribir, límites, totales
-│   ├── store-api.ts         # cliente de la Platzi Fake Store: tipos, query, saneado
+│   ├── store-api.ts         # cliente de DummyJSON: catálogo cacheado, filtros, saneado
 │   ├── session.ts           # cookie de sesión: crear, leer (exp + sub), borrar
 │   ├── validation.ts        # reglas de los campos, espejo del backend
 │   ├── useValidatedForm.ts  # las mismas reglas en el navegador (blur, envío)

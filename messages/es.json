@@ -110,7 +110,7 @@
   "auth.error.UNEXPECTED": "No pudimos completar la operación. Inténtalo otra vez.",
 
   "store.title": "Simulador de tienda",
-  "store.subtitle": "Catálogo de la Platzi Fake Store, una API pública de ejemplo. Solo lectura: aquí no se compra nada.",
+  "store.subtitle": "Catálogo de DummyJSON, una API pública de ejemplo. Solo lectura: aquí no se compra nada.",
   "store.note.language": "Los nombres y descripciones de los productos llegan en inglés desde la API y no se traducen: el catálogo no es nuestro.",
   "store.filter.heading": "Filtros",
   "store.filter.search": "Buscar",

@@ -58,14 +58,19 @@ export function formatDateTime(iso: string, locale: Locale): string {
 }
 
 /**
- * Precios del catálogo de la tienda. La API los da en dólares y sin decimales;
- * lo que cambia con el idioma es dónde va el símbolo y cómo se agrupan los
- * miles (`$1,999` · `1999 US$`).
+ * Precios del catálogo de la tienda, en dólares. Lo que cambia con el idioma es
+ * dónde va el símbolo y cómo se agrupan los miles (`$1,999.00` · `1999,00 US$`).
+ *
+ * Los dos decimales son obligatorios, no decorativos: el catálogo trae céntimos
+ * y redondear a unidades pinta `9.99` como `10 US$`, y una línea de `3 × 9.99`
+ * como `30 US$` contra un total real de `29.97`. La suma la hace el backend con
+ * `BigDecimal`; enseñar otra cosa es mentir sobre lo que se va a cobrar.
  */
 export function formatPrice(amount: number, locale: Locale): string {
   return new Intl.NumberFormat(locale, {
     style: "currency",
     currency: "USD",
-    maximumFractionDigits: 0,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(amount);
 }

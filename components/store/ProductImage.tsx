@@ -3,7 +3,10 @@ import { BsImage } from "react-icons/bs";
 import { safeImage } from "@/lib/store-api";
 
 type Props = {
-  images: string[];
+  /** URL sin sanear: la del catálogo, la de una línea del carrito o la que
+   *  congeló un pedido. El saneado se hace aquí para que ningún llamante pueda
+   *  saltárselo. */
+  src: string | null | undefined;
   /** Solo para el `alt`. El hueco no lo usa: va marcado como decorativo. */
   title: string;
   className?: string;
@@ -12,18 +15,18 @@ type Props = {
 /**
  * Imagen de un producto.
  *
- * Sin `next/image` a propósito: optimizar obliga a declarar en
- * `next.config.ts` los dominios permitidos, y los de un sandbox donde publica
- * cualquiera no son una lista fija — hoy hay `i.imgur.com`, `placehold.co`,
- * `api.lorem.space` y dominios inventados. Un `<img loading="lazy">` detrás del
- * saneador no necesita saber de antemano de dónde viene la foto.
+ * Sin `next/image` a propósito: optimizar obliga a declarar los dominios
+ * permitidos en `next.config.ts`, y aquí llegan también URLs congeladas en
+ * pedidos viejos, que son de cuando el catálogo era otro. Un `<img
+ * loading="lazy">` detrás del saneador no necesita saber de antemano de dónde
+ * viene la foto.
  */
-export default function ProductImage({ images, title, className = "" }: Props) {
-  const src = safeImage(images);
+export default function ProductImage({ src, title, className = "" }: Props) {
+  const url = safeImage(src);
 
-  // No es una URL (`"image123.png"`, cadenas vacías). El hueco es decorativo:
-  // el título ya está en el texto de al lado, repetirlo solo estorba.
-  if (!src) {
+  // No es una URL utilizable. El hueco es decorativo: el título ya está en el
+  // texto de al lado, repetirlo solo estorba.
+  if (!url) {
     return (
       <div
         aria-hidden
@@ -37,7 +40,7 @@ export default function ProductImage({ images, title, className = "" }: Props) {
   return (
     // eslint-disable-next-line @next/next/no-img-element -- ver el comentario del componente
     <img
-      src={src}
+      src={url}
       alt={title}
       loading="lazy"
       className={`bg-slate-100 object-cover ${className}`}

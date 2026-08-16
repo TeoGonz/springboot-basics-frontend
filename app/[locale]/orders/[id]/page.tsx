@@ -25,9 +25,9 @@ export const dynamicParams = true;
  * Seguimiento de un pedido: el mapa de estado, los datos de envío con los que se
  * hizo y las líneas congeladas.
  *
- * Las líneas salen del pedido, nunca de Platzi: por eso el backend guardó una
- * copia. Un producto renombrado o borrado en el catálogo no reescribe lo que el
- * cliente compró.
+ * Las líneas salen del pedido, nunca del catálogo: por eso el backend guardó
+ * una copia. Un producto renombrado o borrado en DummyJSON no reescribe lo que
+ * el cliente compró.
  *
  * La propiedad la comprueba Spring. Un pedido ajeno responde 404, igual que uno
  * inexistente, y esta página pinta lo mismo para los dos: distinguirlos
@@ -158,7 +158,7 @@ export default async function OrderDetailPage({
                       className="flex items-center gap-4 border-b border-slate-200 px-4 py-4"
                     >
                       <ProductImage
-                        images={[item.imageUrl ?? ""]}
+                        src={item.imageUrl}
                         title={item.title}
                         className="h-14 w-14 shrink-0 rounded-md"
                       />

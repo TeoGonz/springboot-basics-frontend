@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import type { Dictionary, Locale } from "@/lib/i18n";
-import { MIN_PRICE, type ProductQuery, type StoreCategory } from "@/lib/store-api";
+import type { ProductQuery, StoreCategory } from "@/lib/store-api";
 
 type Props = {
   locale: Locale;
@@ -62,17 +62,15 @@ export default function StoreFilters({ locale, t, categories, query }: Props) {
           >
             <option value="">{t["store.filter.allCategories"]}</option>
             {categories.map((category) => (
-              <option key={category.id} value={category.slug}>
+              <option key={category.slug} value={category.slug}>
                 {category.name}
               </option>
             ))}
           </select>
         </div>
 
-        {/* Rellenar solo uno de los dos extremos completa el otro al enviar:
-            la API descarta el rango si le falta una mitad, así que la casilla
-            enseña el valor que acabó viajando en lugar de fingir que está
-            vacía. */}
+        {/* Cada extremo funciona suelto: el rango se aplica en nuestro
+            servidor, sobre el catálogo entero. */}
         <div>
           <label htmlFor="min" className={field}>
             {t["store.filter.min"]}
@@ -82,7 +80,7 @@ export default function StoreFilters({ locale, t, categories, query }: Props) {
             name="min"
             type="number"
             inputMode="numeric"
-            min={MIN_PRICE}
+            min={0}
             defaultValue={query.min ?? ""}
             className={input}
           />
@@ -97,7 +95,7 @@ export default function StoreFilters({ locale, t, categories, query }: Props) {
             name="max"
             type="number"
             inputMode="numeric"
-            min={MIN_PRICE}
+            min={0}
             defaultValue={query.max ?? ""}
             className={input}
           />

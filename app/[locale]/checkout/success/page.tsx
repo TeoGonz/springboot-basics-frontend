@@ -155,7 +155,7 @@ export default async function CheckoutSuccessPage({
                       className="flex items-center gap-4 border-b border-slate-200 px-4 py-4 last:border-b-0"
                     >
                       <ProductImage
-                        images={[item.imageUrl ?? ""]}
+                        src={item.imageUrl}
                         title={item.title}
                         className="h-14 w-14 shrink-0 rounded-md"
                       />

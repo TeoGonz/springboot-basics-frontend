@@ -38,7 +38,7 @@ export default function AddToCartForm({
       <input type="hidden" name="productId" value={product.id} />
       <input type="hidden" name="title" value={product.title} />
       <input type="hidden" name="price" value={product.price} />
-      <input type="hidden" name="image" value={safeImage(product.images) ?? ""} />
+      <input type="hidden" name="image" value={safeImage(product.thumbnail) ?? ""} />
 
       <button
         type="submit"

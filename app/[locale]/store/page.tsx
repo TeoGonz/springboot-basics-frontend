@@ -31,7 +31,7 @@ type StoreView =
 /**
  * Categorías y productos en un solo intento. Las categorías van primero porque
  * el filtro de la URL se valida contra ellas: `?category=loquesea` se ignora en
- * vez de viajar a la API.
+ * vez de vaciar la rejilla.
  */
 async function load(searchParams: SearchParams): Promise<StoreView> {
   try {

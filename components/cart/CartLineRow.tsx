@@ -27,10 +27,8 @@ export default function CartLineRow({ line, locale, t }: Props) {
   return (
     <li className="flex flex-wrap items-center gap-4 border-b border-slate-200 px-4 py-4 last:border-b-0">
       <Link href={`/${locale}/store/${line.i}`} className="shrink-0">
-        {/* La línea guarda una URL suelta; `ProductImage` espera la lista del
-            catálogo y ya sabe descartar lo que no sea una URL. */}
         <ProductImage
-          images={[line.m]}
+          src={line.m}
           title={line.t}
           className="h-16 w-16 rounded-md"
         />

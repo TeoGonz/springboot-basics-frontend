@@ -3,7 +3,7 @@ import Link from "next/link";
 import AddToCartForm from "@/components/cart/AddToCartForm";
 import ProductImage from "@/components/store/ProductImage";
 import { formatPrice, type Dictionary, type Locale } from "@/lib/i18n";
-import type { StoreProduct } from "@/lib/store-api";
+import { categoryLabel, type StoreProduct } from "@/lib/store-api";
 
 type Props = {
   product: StoreProduct;
@@ -26,17 +26,15 @@ export default function ProductCard({ product, locale, t, returnTo }: Props) {
         className="flex flex-1 flex-col"
       >
         <ProductImage
-          images={product.images}
+          src={product.thumbnail}
           title={product.title}
           className="h-44 w-full"
         />
 
         <div className="flex flex-1 flex-col p-4">
-          {product.category && (
-            <span className="mb-2 self-start rounded-full bg-slate-100 px-2 py-1 text-xs tracking-wide text-slate-600 uppercase">
-              {product.category.name}
-            </span>
-          )}
+          <span className="mb-2 self-start rounded-full bg-slate-100 px-2 py-1 text-xs tracking-wide text-slate-600 uppercase">
+            {categoryLabel(product.category)}
+          </span>
 
           <h3 className="mb-3 flex-1 font-semibold">{product.title}</h3>
 

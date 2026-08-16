@@ -6,7 +6,12 @@ import AddToCartForm from "@/components/cart/AddToCartForm";
 import PublicNav from "@/components/PublicNav";
 import ProductImage from "@/components/store/ProductImage";
 import { formatPrice, getDictionary, hasLocale } from "@/lib/i18n";
-import { getProduct, StoreUnavailableError, type StoreProduct } from "@/lib/store-api";
+import {
+  categoryLabel,
+  getProduct,
+  StoreUnavailableError,
+  type StoreProduct,
+} from "@/lib/store-api";
 
 // El layout de `[locale]` lleva `dynamicParams = false` para sus tres idiomas.
 // Este segmento sí acepta cualquier id: el catálogo lo llena un tercero y no
@@ -14,8 +19,9 @@ import { getProduct, StoreUnavailableError, type StoreProduct } from "@/lib/stor
 export const dynamicParams = true;
 
 /**
- * Ficha de producto. Es donde `GET /products/{id}` y su 400 disfrazado de 404
- * se ganan el sitio.
+ * Ficha de producto. El producto se busca en el catálogo ya cacheado, así que
+ * abrir una ficha no cuesta ninguna petición: `getProduct` devuelve `null` si
+ * el id no está y aquí eso es un resultado normal, no un fallo.
  */
 export default async function ProductPage({
   params,
@@ -87,17 +93,15 @@ export default async function ProductPage({
           ) : (
             <article className="grid gap-8 md:grid-cols-2">
               <ProductImage
-                images={product.images}
+                src={product.thumbnail}
                 title={product.title}
                 className="aspect-square w-full rounded-2xl border border-slate-200"
               />
 
               <div>
-                {product.category && (
-                  <span className="mb-3 inline-block rounded-full bg-slate-100 px-2 py-1 text-xs tracking-wide text-slate-600 uppercase">
-                    {product.category.name}
-                  </span>
-                )}
+                <span className="mb-3 inline-block rounded-full bg-slate-100 px-2 py-1 text-xs tracking-wide text-slate-600 uppercase">
+                  {categoryLabel(product.category)}
+                </span>
 
                 <h1 className="mb-3 text-3xl font-bold">{product.title}</h1>
 

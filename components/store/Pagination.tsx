@@ -15,10 +15,8 @@ const link =
   "flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm transition hover:bg-slate-100";
 
 /**
- * Anterior y siguiente, sin números de página. La API devuelve un array pelado
- * —ni total ni cabecera de conteo—, así que numerar exigiría descargar los 68
- * productos para enseñar 12. La dirección que no existe no se pinta: un botón
- * muerto se lee como algo que debería funcionar.
+ * Anterior y siguiente, sin números de página. La dirección que no existe no se
+ * pinta: un botón muerto se lee como algo que debería funcionar.
  */
 export default function Pagination({ locale, t, query, hasNext }: Props) {
   if (query.page === 1 && !hasNext) return null;
