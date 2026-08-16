@@ -2,6 +2,7 @@ import Link from "next/link";
 import { BsTrash } from "react-icons/bs";
 
 import { removeLine, setQuantity } from "@/app/actions/cart";
+import QuantityInput from "@/components/cart/QuantityInput";
 import ProductImage from "@/components/store/ProductImage";
 import { MAX_QTY, type CartLine } from "@/lib/cart";
 import { formatPrice, type Dictionary, type Locale } from "@/lib/i18n";
@@ -16,9 +17,9 @@ type Props = {
  * Una línea del carrito con sus dos controles, cada uno en su propio `<form>`
  * de servidor: cambiar la cantidad y quitar el producto.
  *
- * La cantidad es un `<input type="number" min="0" max="99">` con su botón de
- * envío. El `0` borra la línea, que es justo lo que anuncia el `min`; poner 500
- * la deja en 99, el mismo tope que el `@Max(99)` del backend.
+ * La cantidad es un `<input type="number" min="0" max="99">` que se guarda solo
+ * —ver `QuantityInput`—. El `0` borra la línea, que es justo lo que anuncia el
+ * `min`; poner 500 la deja en 99, el mismo tope que el `@Max(99)` del backend.
  */
 export default function CartLineRow({ line, locale, t }: Props) {
   const quantityId = `quantity-${line.i}`;
@@ -51,28 +52,13 @@ export default function CartLineRow({ line, locale, t }: Props) {
         <input type="hidden" name="locale" value={locale} />
         <input type="hidden" name="productId" value={line.i} />
 
-        <div>
-          <label htmlFor={quantityId} className="mb-1 block text-xs text-slate-500">
-            {t["cart.quantity"]}
-          </label>
-          <input
-            id={quantityId}
-            name="quantity"
-            type="number"
-            inputMode="numeric"
-            min={0}
-            max={MAX_QTY}
-            defaultValue={line.q}
-            className="focus:border-brand focus:ring-brand/30 w-20 rounded-md border border-slate-300 px-2 py-1.5 text-sm outline-none focus:ring-2"
-          />
-        </div>
-
-        <button
-          type="submit"
-          className="rounded-md border border-slate-300 px-3 py-1.5 text-sm transition hover:bg-slate-100"
-        >
-          {t["cart.update"]}
-        </button>
+        <QuantityInput
+          id={quantityId}
+          max={MAX_QTY}
+          quantity={line.q}
+          label={t["cart.quantity"]}
+          updateLabel={t["cart.update"]}
+        />
       </form>
 
       <p className="text-brand w-24 text-right font-bold">

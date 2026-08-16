@@ -106,7 +106,7 @@ El carrito **no es un recurso del backend**: es un borrador que pertenece a este
 
 Los nombres de los campos son de una letra (`{i,t,p,q,m}`). No es optimización prematura: es la diferencia entre que quepan seis productos o diez.
 
-**Los controles son `<form>` de servidor con campos ocultos** —añadir, cambiar cantidad, quitar, vaciar—, así que enviar *es* la interacción y todo funciona con JavaScript apagado, igual que los filtros de la tienda. El único componente de cliente del flujo es el formulario de envío, porque los errores por campo tienen que volver a pintarse bajo su casilla; es el mismo patrón que los formularios de autenticación. El aviso de "carrito lleno" viaja en la query (`?cart=full`): un formulario de servidor no puede devolverle estado a la página que lo pintó.
+**Los controles son `<form>` de servidor con campos ocultos** —añadir, cambiar cantidad, quitar, vaciar—, así que enviar *es* la interacción y todo funciona con JavaScript apagado, igual que los filtros de la tienda. Dos piezas del flujo son de cliente: el formulario de envío, porque los errores por campo tienen que volver a pintarse bajo su casilla —el mismo patrón que los formularios de autenticación—, y la casilla de cantidad, que **se guarda sola**: envía medio segundo después de la última tecla, porque sin esa espera escribir `12` mandaría dos peticiones y la primera guardaría `1`. Un campo vacío no se envía; borrar el producto lo sigue pidiendo el `0`. Su botón «Actualizar» se pinta en el servidor y solo desaparece cuando el componente ha montado, que es la prueba de que el envío automático puede funcionar: sin JavaScript el botón se queda y la cantidad se cambia con él. El aviso de "carrito lleno" viaja en la query (`?cart=full`): un formulario de servidor no puede devolverle estado a la página que lo pintó.
 
 Cerrar el pedido llama a `POST /api/orders` con el token de la cookie, borra el carrito y redirige a `/{idioma}/checkout/success?order=N`. **La redirección lleva solo el id**: la pantalla de confirmación vuelve a pedir el pedido con `GET /api/orders/{id}`, así que recargarla enseña el pedido de verdad y el id de un extraño responde 404 —la propiedad la comprueba Spring— en vez de pintar el recibo de otro. El correo de confirmación sale en el idioma de la URL desde la que se pidió.
 
@@ -175,7 +175,7 @@ front-react-project/
 │   ├── PostCard.tsx         # tarjeta de entrada
 │   ├── admin/               # AdminOrderFilters, AdminOrderRow, AdminStatusForm
 │   ├── auth/                # AuthCard, Field, FormError, SubmitButton + los 4 formularios
-│   ├── cart/                # AddToCartForm, CartLineRow, CartSummary, CheckoutForm
+│   ├── cart/                # AddToCartForm, CartLineRow, QuantityInput, CartSummary, CheckoutForm
 │   ├── orders/              # OrderCard, OrderStatusBadge, OrderStatusSteps
 │   └── store/               # StoreFilters, ProductCard, ProductImage, Pagination
 ├── lib/
