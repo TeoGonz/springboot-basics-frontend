@@ -38,3 +38,33 @@ export function validateMatch(
   if (!confirmation) return "auth.validation.required";
   return password === confirmation ? null : "auth.validation.mismatch";
 }
+
+// --- Envío del pedido ---
+
+/** Los tres topes son los `@Size` de `CreateOrderRequest` en el backend. */
+export const MAX_RECIPIENT_NAME_LENGTH = 120;
+export const MAX_ADDRESS_LENGTH = 200;
+export const MAX_PHONE_LENGTH = 30;
+
+function validateBounded(value: string, max: number): MessageKey | null {
+  const trimmed = value.trim();
+  if (!trimmed) return "checkout.validation.required";
+  return trimmed.length <= max ? null : "checkout.validation.tooLong";
+}
+
+export function validateRecipientName(value: string): MessageKey | null {
+  return validateBounded(value, MAX_RECIPIENT_NAME_LENGTH);
+}
+
+export function validateAddress(value: string): MessageKey | null {
+  return validateBounded(value, MAX_ADDRESS_LENGTH);
+}
+
+/**
+ * El teléfono solo se comprueba lleno y acotado. Un formato estricto aquí
+ * rechazaría prefijos internacionales, extensiones y espacios que el backend
+ * acepta sin problema: la casilla no es un validador de telefonía.
+ */
+export function validatePhone(value: string): MessageKey | null {
+  return validateBounded(value, MAX_PHONE_LENGTH);
+}

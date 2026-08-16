@@ -16,6 +16,8 @@ export type ApiErrorCode =
   | "EMAIL_TAKEN"
   | "INVALID_TOKEN"
   | "EXPIRED_TOKEN"
+  | "EMPTY_CART"
+  | "ORDER_NOT_FOUND"
   | "UNEXPECTED";
 
 export class ApiError extends Error {
@@ -110,3 +112,61 @@ export type UserResponse = {
   email: string;
   roles: string[];
 };
+
+// --- Pedidos ---
+
+export type OrderStatus = "PREPARING" | "SHIPPED" | "DELIVERED";
+
+export type OrderItemResponse = {
+  productId: number;
+  title: string;
+  unitPrice: number;
+  quantity: number;
+  imageUrl: string | null;
+  lineTotal: number;
+};
+
+export type OrderDetailResponse = {
+  id: number;
+  status: OrderStatus;
+  total: number;
+  recipientName: string;
+  address: string;
+  phone: string;
+  createdAt: string;
+  updatedAt: string;
+  items: OrderItemResponse[];
+};
+
+/** Lo que viaja en `POST /api/orders`. Nunca lleva un id de usuario: quién pide
+ *  lo dice el token, y un campo así permitiría pedir en nombre de otro. */
+export type CreateOrderRequest = {
+  items: Array<{
+    productId: number;
+    title: string;
+    unitPrice: number;
+    quantity: number;
+    imageUrl?: string;
+  }>;
+  recipientName: string;
+  address: string;
+  phone: string;
+  /** Idioma del correo de confirmación, no de la respuesta: la API no tiene i18n. */
+  locale: string;
+};
+
+export function createOrder(
+  body: CreateOrderRequest,
+  token: string,
+): Promise<OrderDetailResponse | null> {
+  return apiPost<OrderDetailResponse>("/api/orders", body, token);
+}
+
+/** Un pedido ajeno responde 404, igual que uno inexistente: la comprobación de
+ *  propiedad la hace Spring, no esta capa. */
+export function getMyOrder(
+  id: number,
+  token: string,
+): Promise<OrderDetailResponse | null> {
+  return apiGet<OrderDetailResponse>(`/api/orders/${id}`, token);
+}

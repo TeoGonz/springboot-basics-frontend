@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BsArrowLeft } from "react-icons/bs";
 
+import AddToCartForm from "@/components/cart/AddToCartForm";
 import PublicNav from "@/components/PublicNav";
 import ProductImage from "@/components/store/ProductImage";
 import { formatPrice, getDictionary, hasLocale } from "@/lib/i18n";
@@ -18,13 +19,18 @@ export const dynamicParams = true;
  */
 export default async function ProductPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string; id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { locale, id } = await params;
   if (!hasLocale(locale)) notFound();
 
   const t = getDictionary(locale);
+  // El aviso del tope del carrito llega en la query: un `<form>` de servidor no
+  // puede devolverle estado a la página que lo pintó.
+  const cartFull = (await searchParams).cart === "full";
 
   const numericId = Number(id);
   const exists = Number.isInteger(numericId) && numericId > 0;
@@ -54,6 +60,15 @@ export default async function ProductPage({
             <BsArrowLeft aria-hidden />
             {t["store.product.back"]}
           </Link>
+
+          {cartFull && (
+            <p
+              role="alert"
+              className="mb-6 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800"
+            >
+              {t["cart.full"]}
+            </p>
+          )}
 
           {/* No se llama a `notFound()`: la 404 de Next se pinta fuera de este
               layout y perdería la barra y el idioma. Un id que no existe es un
@@ -89,6 +104,14 @@ export default async function ProductPage({
                 <p className="text-brand mb-6 text-2xl font-bold">
                   {formatPrice(product.price, locale)}
                 </p>
+
+                <AddToCartForm
+                  product={product}
+                  locale={locale}
+                  t={t}
+                  returnTo={`/${locale}/store/${product.id}`}
+                  className="mb-6 max-w-xs"
+                />
 
                 <p className="mb-6 whitespace-pre-line text-slate-600">
                   {product.description}

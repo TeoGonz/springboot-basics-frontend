@@ -9,6 +9,7 @@ import {
   getCategories,
   getProducts,
   parseProductQuery,
+  storeHref,
   StoreUnavailableError,
   type ProductQuery,
   type StoreCategory,
@@ -66,7 +67,12 @@ export default async function StorePage({
   if (!hasLocale(locale)) notFound();
 
   const t = getDictionary(locale);
-  const view = await load(await searchParams);
+  const query = await searchParams;
+  const view = await load(query);
+
+  // El aviso del tope del carrito llega en la query: un `<form>` de servidor no
+  // puede devolverle estado a la página que lo pintó.
+  const cartFull = query.cart === "full";
 
   return (
     <>
@@ -79,6 +85,15 @@ export default async function StorePage({
           <p className="mb-8 text-sm text-slate-400">
             {t["store.note.language"]}
           </p>
+
+          {cartFull && (
+            <p
+              role="alert"
+              className="mb-6 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800"
+            >
+              {t["cart.full"]}
+            </p>
+          )}
 
           {!view.ok ? (
             <p className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800">
@@ -104,6 +119,8 @@ export default async function StorePage({
                       key={product.id}
                       product={product}
                       locale={locale}
+                      t={t}
+                      returnTo={storeHref(locale, view.query, view.query.page)}
                     />
                   ))}
                 </ul>

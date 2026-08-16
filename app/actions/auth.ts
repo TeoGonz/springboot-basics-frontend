@@ -42,6 +42,11 @@ const ERROR_KEYS: Record<ApiErrorCode, MessageKey> = {
   EMAIL_TAKEN: "auth.error.EMAIL_TAKEN",
   INVALID_TOKEN: "auth.error.INVALID_TOKEN",
   EXPIRED_TOKEN: "auth.error.EXPIRED_TOKEN",
+  // Códigos de pedidos: ninguna pantalla de autenticación los provoca, pero el
+  // mapa es exhaustivo a propósito — así añadir un código a la API obliga a
+  // decidir aquí qué se le enseña al usuario.
+  EMPTY_CART: "auth.error.UNEXPECTED",
+  ORDER_NOT_FOUND: "auth.error.UNEXPECTED",
   UNEXPECTED: "auth.error.UNEXPECTED",
 };
 

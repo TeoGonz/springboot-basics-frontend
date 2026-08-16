@@ -2,7 +2,7 @@
 
 Front de la **bitácora del curso** en **Next.js 16** (App Router). Es la única capa HTML del proyecto: el backend Spring (`springboot_java_project/`, repositorio hermano) es una **API REST pura** y no sirve vistas.
 
-Las entradas de la bitácora son **estáticas** —viven en el código, no en la API—, pero todas las páginas se **renderizan por petición**: la barra común lee la cookie de sesión para rotular el botón de acceso con el nombre de quien entró, y eso descarta el prerenderizado. Las pantallas de autenticación, la cuenta y la zona de administración **sí** hablan con la API. El simulador de tienda habla con una API pública de terceros, no con la nuestra.
+Las entradas de la bitácora son **estáticas** —viven en el código, no en la API—, pero todas las páginas se **renderizan por petición**: la barra común lee la cookie de sesión para rotular el botón de acceso con el nombre de quien entró, y eso descarta el prerenderizado. Las pantallas de autenticación, la cuenta, la zona de administración y el cierre del pedido **sí** hablan con la API. El simulador de tienda habla con una API pública de terceros, no con la nuestra; el carrito no habla con ninguna, porque vive en una cookie.
 
 ## Stack
 
@@ -42,6 +42,9 @@ La bitácora pública funciona sin backend. Las pantallas de autenticación nece
 | `/{idioma}/admin` | Zona de administración: solo con `ROLE_ADMIN`; con otro rol, aviso y enlace a `account` |
 | `/{idioma}/store` | Simulador de tienda: rejilla de productos con los filtros en la URL |
 | `/{idioma}/store/{id}` | Ficha de un producto |
+| `/{idioma}/cart` | Carrito: líneas, cantidades y total. No necesita sesión |
+| `/{idioma}/checkout` | Datos de envío; sin sesión, panel de acceso en lugar del formulario |
+| `/{idioma}/checkout/success?order=N` | Recibo del pedido, releído de la API |
 
 `{idioma}` es `es`, `en` o `pt`; cualquier otro devuelve 404 (`dynamicParams = false` en el layout). El `{id}` de la tienda vuelve a abrirlo (`dynamicParams = true`): el catálogo lo llena un tercero, así que no hay lista de ids que prerenderizar. Los segmentos de ruta están en inglés en los tres idiomas: traducirlos exigiría un mapa de rutas por idioma sin ganar nada.
 
@@ -86,6 +89,26 @@ Cualquier cosa ininteligible en la query string (`?min=abc`, `?page=-4`) se trat
 
 Si la API no contesta —vive en un dyno gratuito que se duerme— cada llamada corta a los 8 s y la página muestra un aviso en lugar de una traza.
 
+## Carrito y pedidos
+
+El carrito **no es un recurso del backend**: es un borrador que pertenece a este navegador. Vive en la cookie `bitacora_cart` —`httpOnly`, `sameSite=lax`, 7 días, `secure` en producción, la misma forma que la de sesión— y no llega a Spring hasta que es un pedido cerrado. Así la API no guarda un estado a medias que nadie consulta, y un visitante anónimo puede llenar el carrito y tener que identificarse solo al final.
+
+**Guarda una copia del producto, no su id**: `productId`, título, precio, imagen y cantidad — los mismos cinco campos que `order_item` congela en el backend. El catálogo es un sandbox que cualquiera puede reescribir, y un carrito que lo releyera cambiaría sus propios precios entre la rejilla y el checkout. De regalo, `/cart` se pinta sin una sola llamada a la tienda.
+
+| Límite | Valor | Por qué |
+|---|---|---|
+| Productos distintos | **10** | Todos los navegadores cortan la cookie sobre los 4 KB y la que se pasa no da error: se pierde en silencio. El undécimo se rechaza con un aviso |
+| Cantidad por producto | **99** | El mismo `@Max(99)` del backend |
+| Tamaño de la cookie | **3500 bytes** | Margen bajo el tope del navegador |
+
+Los nombres de los campos son de una letra (`{i,t,p,q,m}`). No es optimización prematura: es la diferencia entre que quepan seis productos o diez.
+
+**Los controles son `<form>` de servidor con campos ocultos** —añadir, cambiar cantidad, quitar, vaciar—, así que enviar *es* la interacción y todo funciona con JavaScript apagado, igual que los filtros de la tienda. El único componente de cliente del flujo es el formulario de envío, porque los errores por campo tienen que volver a pintarse bajo su casilla; es el mismo patrón que los formularios de autenticación. El aviso de "carrito lleno" viaja en la query (`?cart=full`): un formulario de servidor no puede devolverle estado a la página que lo pintó.
+
+Cerrar el pedido llama a `POST /api/orders` con el token de la cookie, borra el carrito y redirige a `/{idioma}/checkout/success?order=N`. **La redirección lleva solo el id**: la pantalla de confirmación vuelve a pedir el pedido con `GET /api/orders/{id}`, así que recargarla enseña el pedido de verdad y el id de un extraño responde 404 —la propiedad la comprueba Spring— en vez de pintar el recibo de otro. El correo de confirmación sale en el idioma de la URL desde la que se pidió.
+
+`httpOnly` frena a los scripts, no al usuario ni a un proxy: **todo lo que sale de la cookie se vuelve a validar** en la acción, y detrás vuelve a validar la API. El precio unitario que viaja es el que la API se cree — ese agujero es del backend y está documentado en su README; aquí no se ensancha ni se puede cerrar.
+
 ## Validación de los formularios
 
 Las reglas viven una sola vez, en `lib/validation.ts`, y las usan los dos lados:
@@ -108,20 +131,25 @@ front-react-project/
 ├── app/
 │   ├── globals.css          # import de Tailwind + tokens del diseño (@theme)
 │   ├── actions/auth.ts      # Server Actions: login, register, forgot, reset, logout
+│   ├── actions/cart.ts      # Server Actions: añadir, cantidad, quitar, vaciar, pedir
 │   └── [locale]/
 │       ├── layout.tsx       # layout raíz: <html lang>, fuentes, metadata
 │       ├── page.tsx         # bitácora pública (entradas estáticas)
 │       ├── login/, register/, forgot-password/, reset-password/, account/
 │       ├── admin/            # zona restringida a ROLE_ADMIN
-│       └── store/           # rejilla con filtros + [id]/ con la ficha
+│       ├── store/           # rejilla con filtros + [id]/ con la ficha
+│       ├── cart/            # el carrito
+│       └── checkout/        # datos de envío + success/ con el recibo
 ├── components/
-│   ├── PublicNav.tsx        # marca + tienda + acceso (nombre si hay sesión) + idioma
+│   ├── PublicNav.tsx        # marca + tienda + carrito + acceso + idioma
 │   ├── LanguageSwitcher.tsx # dropdown (cliente): cambia el segmento de idioma
 │   ├── PostCard.tsx         # tarjeta de entrada
 │   ├── auth/                # AuthCard, Field, FormError, SubmitButton + los 4 formularios
+│   ├── cart/                # AddToCartForm, CartLineRow, CartSummary, CheckoutForm
 │   └── store/               # StoreFilters, ProductCard, ProductImage, Pagination
 ├── lib/
 │   ├── api.ts               # cliente de la API de Spring (solo servidor) + tipos
+│   ├── cart.ts              # cookie del carrito: leer, escribir, límites, totales
 │   ├── store-api.ts         # cliente de la Platzi Fake Store: tipos, query, saneado
 │   ├── session.ts           # cookie de sesión: crear, leer (exp + sub), borrar
 │   ├── validation.ts        # reglas de los campos, espejo del backend
@@ -137,7 +165,7 @@ El layout raíz vive **dentro** de `[locale]` porque `<html lang>` cambia con el
 
 ## i18n
 
-- Idiomas: `es` (por defecto), `en`, `pt`. Las claves originales vienen de los `messages*.properties` de Spring, con los mismos nombres; las de autenticación se añadieron bajo `auth.*` y las de la tienda bajo `store.*`.
+- Idiomas: `es` (por defecto), `en`, `pt`. Las claves originales vienen de los `messages*.properties` de Spring, con los mismos nombres; las de autenticación se añadieron bajo `auth.*`, las de la tienda bajo `store.*` y las del carrito bajo `cart.*`, `checkout.*` y `order.status.*`.
 - Los textos se leen en componentes de servidor: los diccionarios **no** viajan al navegador (los formularios reciben solo el suyo).
 - `lib/i18n.ts` toma el bundle español como referencia: si `en.json` o `pt.json` pierden una clave, el proyecto no compila.
 - Las fechas se localizan con `Intl.DateTimeFormat` (`18 jul 2026` · `Jul 18, 2026` · `18 de jul. de 2026`) y los precios con `Intl.NumberFormat` (`6911 US$` · `$6,911` · `US$ 6.911`).

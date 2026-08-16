@@ -1,12 +1,14 @@
 import Link from "next/link";
 import {
   BsBoxArrowInRight,
+  BsCart3,
   BsJournalCode,
   BsPersonCircle,
   BsShop,
 } from "react-icons/bs";
 
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { cartCount, readCart } from "@/lib/cart";
 import type { Dictionary, Locale } from "@/lib/i18n";
 import { getSession } from "@/lib/session";
 
@@ -33,6 +35,8 @@ const accessLink =
  */
 export default async function PublicNav({ locale, t }: Props) {
   const session = await getSession();
+  // El contador cuenta líneas, no unidades: es el mismo `itemCount` de la API.
+  const count = cartCount(await readCart());
 
   return (
     <nav className="sticky top-0 z-40 bg-slate-900 text-white">
@@ -52,6 +56,21 @@ export default async function PublicNav({ locale, t }: Props) {
           >
             <BsShop aria-hidden />
             {t["nav.store"]}
+          </Link>
+
+          {/* A cero se pinta sin globo, no escondido: la entrada al carrito
+              tiene que existir antes de que haya nada dentro. */}
+          <Link
+            href={`/${locale}/cart`}
+            className="relative flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition hover:bg-white/10"
+          >
+            <BsCart3 aria-hidden />
+            {t["nav.cart"]}
+            {count > 0 && (
+              <span className="bg-brand-2 grid h-5 min-w-5 place-items-center rounded-full px-1 text-xs font-bold text-slate-900">
+                {count}
+              </span>
+            )}
           </Link>
 
           {session?.username ? (
