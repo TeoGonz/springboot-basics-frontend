@@ -33,6 +33,31 @@ export function formatDate(isoDate: string, locale: Locale): string {
 }
 
 /**
+ * Instantes que devuelve la API (`Instant` de Java, ISO con zona) — el momento
+ * en que se registró un pedido o en que se movió por última vez.
+ *
+ * No vale `formatDate`: aquella recibe `YYYY-MM-DD` y le pega la hora que falta,
+ * así que un instante completo le llega con dos horas. Aquí sí hay hora y sí
+ * importa: dos pedidos del mismo día se distinguen por ella.
+ *
+ * Lo hace el servidor, con su zona horaria. Que un cliente en otro huso vea la
+ * hora del servidor es lo que hay: la alternativa es formatear en el navegador,
+ * y eso convierte estas páginas en componentes de cliente.
+ */
+export function formatDateTime(iso: string, locale: Locale): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+
+  return new Intl.DateTimeFormat(locale, {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
+/**
  * Precios del catálogo de la tienda. La API los da en dólares y sin decimales;
  * lo que cambia con el idioma es dónde va el símbolo y cómo se agrupan los
  * miles (`$1,999` · `1999 US$`).

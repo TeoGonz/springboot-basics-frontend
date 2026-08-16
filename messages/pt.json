@@ -181,5 +181,30 @@
 
   "order.status.PREPARING": "Em preparação",
   "order.status.SHIPPED": "A caminho",
-  "order.status.DELIVERED": "Entregue"
+  "order.status.DELIVERED": "Entregue",
+
+  "orders.title": "Meus pedidos",
+  "orders.subtitle": "Tudo o que você pediu, do mais recente ao mais antigo.",
+  "orders.signIn.title": "Entre para ver seus pedidos",
+  "orders.signIn.body": "Os pedidos estão ligados à sua conta.",
+  "orders.signIn.link": "Entrar",
+  "orders.empty": "Você ainda não fez nenhum pedido.",
+  "orders.empty.link": "Ver a loja",
+  "orders.itemCount": "produtos",
+  "orders.items": "Produtos",
+  "orders.total": "Total",
+  "orders.back": "Voltar aos meus pedidos",
+  "orders.progress": "Estado do pedido",
+  "orders.lastUpdate": "Última movimentação:",
+  "orders.shipping": "Envio",
+  "orders.notFound": "Pedido não encontrado",
+  "orders.notFoundBody": "Esse pedido não existe ou não é seu.",
+  "orders.note.reload": "O estado é alterado pela loja. Recarregue a página para ver a novidade.",
+  "orders.status.unknown": "Estado não reconhecido:",
+  "orders.step.done": "concluído",
+  "orders.step.current": "estado atual",
+  "orders.step.pending": "pendente",
+  "orders.error.UNEXPECTED": "Não conseguimos consultar seus pedidos. Tente de novo.",
+  "orders.accountLink": "Ver meus pedidos",
+  "orders.trackLink": "Acompanhar este pedido"
 }

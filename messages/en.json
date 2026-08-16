@@ -181,5 +181,30 @@
 
   "order.status.PREPARING": "Preparing",
   "order.status.SHIPPED": "On its way",
-  "order.status.DELIVERED": "Delivered"
+  "order.status.DELIVERED": "Delivered",
+
+  "orders.title": "My orders",
+  "orders.subtitle": "Everything you have ordered, newest first.",
+  "orders.signIn.title": "Sign in to see your orders",
+  "orders.signIn.body": "Orders are tied to your account.",
+  "orders.signIn.link": "Sign in",
+  "orders.empty": "You have not placed any order yet.",
+  "orders.empty.link": "Browse the store",
+  "orders.itemCount": "products",
+  "orders.items": "Products",
+  "orders.total": "Total",
+  "orders.back": "Back to my orders",
+  "orders.progress": "Order status",
+  "orders.lastUpdate": "Last movement:",
+  "orders.shipping": "Shipping",
+  "orders.notFound": "Order not found",
+  "orders.notFoundBody": "That order does not exist, or it is not yours.",
+  "orders.note.reload": "The store changes the status. Reload the page to see the latest.",
+  "orders.status.unknown": "Unrecognised status:",
+  "orders.step.done": "done",
+  "orders.step.current": "current status",
+  "orders.step.pending": "pending",
+  "orders.error.UNEXPECTED": "We could not fetch your orders. Try again.",
+  "orders.accountLink": "See my orders",
+  "orders.trackLink": "Track this order"
 }

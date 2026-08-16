@@ -2,7 +2,7 @@
 
 Front de la **bitácora del curso** en **Next.js 16** (App Router). Es la única capa HTML del proyecto: el backend Spring (`springboot_java_project/`, repositorio hermano) es una **API REST pura** y no sirve vistas.
 
-Las entradas de la bitácora son **estáticas** —viven en el código, no en la API—, pero todas las páginas se **renderizan por petición**: la barra común lee la cookie de sesión para rotular el botón de acceso con el nombre de quien entró, y eso descarta el prerenderizado. Las pantallas de autenticación, la cuenta, la zona de administración y el cierre del pedido **sí** hablan con la API. El simulador de tienda habla con una API pública de terceros, no con la nuestra; el carrito no habla con ninguna, porque vive en una cookie.
+Las entradas de la bitácora son **estáticas** —viven en el código, no en la API—, pero todas las páginas se **renderizan por petición**: la barra común lee la cookie de sesión para rotular el botón de acceso con el nombre de quien entró, y eso descarta el prerenderizado. Las pantallas de autenticación, la cuenta, la zona de administración, el cierre del pedido y el seguimiento **sí** hablan con la API. El simulador de tienda habla con una API pública de terceros, no con la nuestra; el carrito no habla con ninguna, porque vive en una cookie.
 
 ## Stack
 
@@ -45,6 +45,8 @@ La bitácora pública funciona sin backend. Las pantallas de autenticación nece
 | `/{idioma}/cart` | Carrito: líneas, cantidades y total. No necesita sesión |
 | `/{idioma}/checkout` | Datos de envío; sin sesión, panel de acceso en lugar del formulario |
 | `/{idioma}/checkout/success?order=N` | Recibo del pedido, releído de la API |
+| `/{idioma}/orders` | Mis pedidos, del más nuevo al más viejo; sin sesión, panel de acceso |
+| `/{idioma}/orders/{id}` | Seguimiento de un pedido: mapa de estado, envío y líneas |
 
 `{idioma}` es `es`, `en` o `pt`; cualquier otro devuelve 404 (`dynamicParams = false` en el layout). El `{id}` de la tienda vuelve a abrirlo (`dynamicParams = true`): el catálogo lo llena un tercero, así que no hay lista de ids que prerenderizar. Los segmentos de ruta están en inglés en los tres idiomas: traducirlos exigiría un mapa de rutas por idioma sin ganar nada.
 
@@ -109,6 +111,18 @@ Cerrar el pedido llama a `POST /api/orders` con el token de la cookie, borra el 
 
 `httpOnly` frena a los scripts, no al usuario ni a un proxy: **todo lo que sale de la cookie se vuelve a validar** en la acción, y detrás vuelve a validar la API. El precio unitario que viaja es el que la API se cree — ese agujero es del backend y está documentado en su README; aquí no se ensancha ni se puede cerrar.
 
+## Seguimiento de pedidos
+
+`/{idioma}/orders` y `/{idioma}/orders/{id}` son **solo lectura**: leen `GET /api/orders` y `GET /api/orders/{id}` con el token de la cookie y pintan lo que llega. No hay cancelar, repetir ni editar la dirección — no son requisitos y no hay endpoint detrás.
+
+El detalle enseña el **mapa de estado**: tres pasos (`PREPARING` · `SHIPPED` · `DELIVERED`) en un `<ol>` con tres estados por paso —hecho, actual, pendiente—, el actual marcado con `aria-current="step"` y cada estado escrito además del color. La traducción del estado vive aquí, bajo `order.status.*`: la API contesta `"SHIPPED"`, como todo lo que devuelve. Un estado que este front no conozca deja los tres pasos pendientes y enseña el código crudo, en vez de romperse: la API puede ganar uno antes de que el front se entere.
+
+**Ni sondeo ni componentes de cliente.** El estado lo mueve un administrador horas después, así que la forma de refrescar es recargar y la página lo dice. Un temporizador en el navegador para cazar un evento que ocurre dos veces por pedido no compensa.
+
+Las líneas salen del pedido, **nunca del catálogo**: por eso el backend guardó una copia. Un producto renombrado o borrado en Platzi no reescribe lo que el cliente compró.
+
+La propiedad la comprueba Spring, no esta página. Un pedido ajeno responde `404`, igual que uno inexistente, y las dos cosas se pintan iguales: distinguirlas confirmaría qué ids existen. Ese "no encontrado" se pinta **dentro** de la página —no con `notFound()`— porque la 404 de Next vive fuera del layout de idioma y perdería la barra y el idioma. Si el token de la cookie sigue ahí pero la API lo rechaza, sale el mismo aviso de sesión caducada que `account`, con el botón de cerrar sesión: redirigir a `login` con la cookie puesta sería un bucle.
+
 ## Validación de los formularios
 
 Las reglas viven una sola vez, en `lib/validation.ts`, y las usan los dos lados:
@@ -139,13 +153,15 @@ front-react-project/
 │       ├── admin/            # zona restringida a ROLE_ADMIN
 │       ├── store/           # rejilla con filtros + [id]/ con la ficha
 │       ├── cart/            # el carrito
-│       └── checkout/        # datos de envío + success/ con el recibo
+│       ├── checkout/        # datos de envío + success/ con el recibo
+│       └── orders/          # mis pedidos + [id]/ con el seguimiento
 ├── components/
 │   ├── PublicNav.tsx        # marca + tienda + carrito + acceso + idioma
 │   ├── LanguageSwitcher.tsx # dropdown (cliente): cambia el segmento de idioma
 │   ├── PostCard.tsx         # tarjeta de entrada
 │   ├── auth/                # AuthCard, Field, FormError, SubmitButton + los 4 formularios
 │   ├── cart/                # AddToCartForm, CartLineRow, CartSummary, CheckoutForm
+│   ├── orders/              # OrderCard, OrderStatusBadge, OrderStatusSteps
 │   └── store/               # StoreFilters, ProductCard, ProductImage, Pagination
 ├── lib/
 │   ├── api.ts               # cliente de la API de Spring (solo servidor) + tipos
@@ -165,10 +181,10 @@ El layout raíz vive **dentro** de `[locale]` porque `<html lang>` cambia con el
 
 ## i18n
 
-- Idiomas: `es` (por defecto), `en`, `pt`. Las claves originales vienen de los `messages*.properties` de Spring, con los mismos nombres; las de autenticación se añadieron bajo `auth.*`, las de la tienda bajo `store.*` y las del carrito bajo `cart.*`, `checkout.*` y `order.status.*`.
+- Idiomas: `es` (por defecto), `en`, `pt`. Las claves originales vienen de los `messages*.properties` de Spring, con los mismos nombres; las de autenticación se añadieron bajo `auth.*`, las de la tienda bajo `store.*`, las del carrito bajo `cart.*` y `checkout.*`, las de los pedidos bajo `orders.*`, y los nombres de los estados bajo `order.status.*`, que comparten el recibo y el seguimiento.
 - Los textos se leen en componentes de servidor: los diccionarios **no** viajan al navegador (los formularios reciben solo el suyo).
 - `lib/i18n.ts` toma el bundle español como referencia: si `en.json` o `pt.json` pierden una clave, el proyecto no compila.
-- Las fechas se localizan con `Intl.DateTimeFormat` (`18 jul 2026` · `Jul 18, 2026` · `18 de jul. de 2026`) y los precios con `Intl.NumberFormat` (`6911 US$` · `$6,911` · `US$ 6.911`).
+- Las fechas se localizan con `Intl.DateTimeFormat` (`18 jul 2026` · `Jul 18, 2026` · `18 de jul. de 2026`) y los precios con `Intl.NumberFormat` (`6911 US$` · `$6,911` · `US$ 6.911`). Los pedidos llevan fecha **y hora**, porque dos del mismo día se distinguen por ella; el formato lo pone el servidor con su zona horaria, ya que hacerlo en el navegador convertiría estas páginas en componentes de cliente.
 - Lo que llega de una API ajena no se traduce: los nombres y descripciones del catálogo se quedan en inglés, y la página lo dice.
 
 ## Estilos

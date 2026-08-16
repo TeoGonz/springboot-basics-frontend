@@ -4,6 +4,7 @@ import {
   BsBoxArrowInRight,
   BsCheckCircle,
   BsEnvelopeCheck,
+  BsTruck,
 } from "react-icons/bs";
 
 import ProductImage from "@/components/store/ProductImage";
@@ -22,8 +23,8 @@ type SearchParams = Record<string, string | string[] | undefined>;
  * el id de otro responde 404 —la propiedad la comprueba Spring— en lugar de
  * pintar el recibo de un extraño.
  *
- * No enlaza al seguimiento del pedido: esa ruta es de otro spec y puede no
- * existir. Un enlace que falta está completo; uno muerto, no.
+ * De aquí sale el único enlace al seguimiento (`/{locale}/orders/{id}`): quien
+ * acaba de pedir es quien más quiere mirarlo.
  */
 export default async function CheckoutSuccessPage({
   params,
@@ -172,12 +173,22 @@ export default async function CheckoutSuccessPage({
                 </ul>
               </section>
 
-              <Link
-                href={`/${locale}/store`}
-                className="mt-6 inline-block rounded-md border border-slate-300 px-4 py-2 text-sm transition hover:bg-slate-100"
-              >
-                {t["checkout.success.backToStore"]}
-              </Link>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <Link
+                  href={`/${locale}/orders/${order.id}`}
+                  className="bg-linear-90 from-brand to-brand-2 inline-flex items-center gap-1.5 rounded-md px-4 py-2 text-sm font-medium text-white transition hover:brightness-110"
+                >
+                  <BsTruck aria-hidden />
+                  {t["orders.trackLink"]}
+                </Link>
+
+                <Link
+                  href={`/${locale}/store`}
+                  className="inline-block rounded-md border border-slate-300 px-4 py-2 text-sm transition hover:bg-slate-100"
+                >
+                  {t["checkout.success.backToStore"]}
+                </Link>
+              </div>
             </>
           )}
         </div>

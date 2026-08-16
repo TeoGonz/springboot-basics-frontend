@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { BsPersonCheck, BsShieldLock } from "react-icons/bs";
+import { BsPersonCheck, BsReceipt, BsShieldLock } from "react-icons/bs";
 
 import { logout } from "@/app/actions/auth";
 import PublicNav from "@/components/PublicNav";
@@ -71,15 +71,25 @@ export default async function AccountPage({
 
               <p className="mb-6 text-sm text-slate-500">{t["user.note"]}</p>
 
-              {/* Visible con cualquier rol a propósito: que un USER lo pulse y
-                  se tope con la denegación es lo que enseña el guard. */}
-              <Link
-                href={`/${locale}/admin`}
-                className="inline-flex items-center gap-1.5 rounded-md border border-slate-300 px-4 py-2 text-sm transition hover:bg-slate-100"
-              >
-                <BsShieldLock aria-hidden />
-                {t["auth.account.adminLink"]}
-              </Link>
+              <div className="flex flex-wrap gap-3">
+                <Link
+                  href={`/${locale}/orders`}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-slate-300 px-4 py-2 text-sm transition hover:bg-slate-100"
+                >
+                  <BsReceipt aria-hidden />
+                  {t["orders.accountLink"]}
+                </Link>
+
+                {/* Visible con cualquier rol a propósito: que un USER lo pulse y
+                    se tope con la denegación es lo que enseña el guard. */}
+                <Link
+                  href={`/${locale}/admin`}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-slate-300 px-4 py-2 text-sm transition hover:bg-slate-100"
+                >
+                  <BsShieldLock aria-hidden />
+                  {t["auth.account.adminLink"]}
+                </Link>
+              </div>
             </div>
           ) : (
             <p className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800">

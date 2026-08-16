@@ -126,6 +126,17 @@ export type OrderItemResponse = {
   lineTotal: number;
 };
 
+/** Lo que devuelve la lista: sin líneas. `itemCount` cuenta productos distintos,
+ *  no unidades — la cantidad se ve al abrir el detalle. */
+export type OrderSummaryResponse = {
+  id: number;
+  status: OrderStatus;
+  total: number;
+  itemCount: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type OrderDetailResponse = {
   id: number;
   status: OrderStatus;
@@ -160,6 +171,12 @@ export function createOrder(
   token: string,
 ): Promise<OrderDetailResponse | null> {
   return apiPost<OrderDetailResponse>("/api/orders", body, token);
+}
+
+/** Los pedidos del que llama, del más nuevo al más viejo. No hay endpoint que
+ *  devuelva los de otro, así que aquí no se filtra nada por usuario. */
+export function getMyOrders(token: string): Promise<OrderSummaryResponse[] | null> {
+  return apiGet<OrderSummaryResponse[]>("/api/orders", token);
 }
 
 /** Un pedido ajeno responde 404, igual que uno inexistente: la comprobación de
