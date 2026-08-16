@@ -1,6 +1,11 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { BsShieldCheck, BsShieldExclamation, BsShieldLock } from "react-icons/bs";
+import {
+  BsClipboardCheck,
+  BsShieldCheck,
+  BsShieldExclamation,
+  BsShieldLock,
+} from "react-icons/bs";
 
 import PublicNav from "@/components/PublicNav";
 import { apiGet, type MeResponse } from "@/lib/api";
@@ -17,11 +22,11 @@ const ADMIN_ROLE = "ROLE_ADMIN";
  * de la cookie, así que quién eres lo sigue decidiendo Spring, que es quien
  * firmó el token. Esta página solo decide qué pintar.
  *
- * <p>Ojo con lo que esto es y lo que no: detrás no hay ningún endpoint que
- * responda 403, porque la página aún no muestra datos. La barrera es de
- * renderizado, no de acceso a la información. El día que aquí se pinte algo
- * real, la comprobación tiene que estar detrás de un endpoint `/api/admin/**`
- * y no en este `if`.
+ * <p>Ojo con lo que esto es y lo que no: esta comprobación decide **qué se
+ * pinta**, y nada más. Es cosmética. Los datos de verdad no están aquí — están
+ * en `/admin/orders`, que llama a `/api/admin/orders` y deja que Spring conteste
+ * 403 si el token no lleva el rol. Las dos capas son distintas y ninguna sobra:
+ * esta evita enseñar una pantalla que no va a funcionar, la otra es la barrera.
  */
 export default async function AdminPage({
   params,
@@ -84,6 +89,21 @@ export default async function AdminPage({
                   </li>
                 ))}
               </ul>
+
+              <Link
+                href={`/${locale}/admin/orders`}
+                className="border-brand/30 hover:bg-brand/5 mb-6 flex items-center gap-3 rounded-xl border p-4 transition"
+              >
+                <BsClipboardCheck aria-hidden className="text-brand text-xl" />
+                <span>
+                  <span className="block font-semibold">
+                    {t["admin.orders.link"]}
+                  </span>
+                  <span className="block text-sm text-slate-500">
+                    {t["admin.orders.link.body"]}
+                  </span>
+                </span>
+              </Link>
 
               <p className="text-sm text-slate-500">{t["admin.note"]}</p>
             </div>

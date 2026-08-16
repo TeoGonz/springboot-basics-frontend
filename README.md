@@ -40,6 +40,7 @@ La bitácora pública funciona sin backend. Las pantallas de autenticación nece
 | `/{idioma}/reset-password?token=…` | Destino del enlace del correo: elegir contraseña nueva |
 | `/{idioma}/account` | Zona privada: lo que devuelve `GET /api/me` + cerrar sesión |
 | `/{idioma}/admin` | Zona de administración: solo con `ROLE_ADMIN`; con otro rol, aviso y enlace a `account` |
+| `/{idioma}/admin/orders` | Todos los pedidos de la tienda, con filtro por estado y el control para moverlos |
 | `/{idioma}/store` | Simulador de tienda: rejilla de productos con los filtros en la URL |
 | `/{idioma}/store/{id}` | Ficha de un producto |
 | `/{idioma}/cart` | Carrito: líneas, cantidades y total. No necesita sesión |
@@ -123,6 +124,18 @@ Las líneas salen del pedido, **nunca del catálogo**: por eso el backend guard�
 
 La propiedad la comprueba Spring, no esta página. Un pedido ajeno responde `404`, igual que uno inexistente, y las dos cosas se pintan iguales: distinguirlas confirmaría qué ids existen. Ese "no encontrado" se pinta **dentro** de la página —no con `notFound()`— porque la 404 de Next vive fuera del layout de idioma y perdería la barra y el idioma. Si el token de la cookie sigue ahí pero la API lo rechaza, sale el mismo aviso de sesión caducada que `account`, con el botón de cerrar sesión: redirigir a `login` con la cookie puesta sería un bucle.
 
+## Administración de pedidos
+
+`/{idioma}/admin/orders` es la pantalla de operación: una **tabla** —número, cliente, fecha, estado, líneas, total y el control— porque un operador repasa filas; las tarjetas sirven para pasear por un catálogo, no para trabajar. Enseña el `username` y **nunca el correo**: la API no lo manda y esta página no lo pide.
+
+**La barrera es la API, no la página.** El `if` de rol de `admin` decide qué se pinta y nada más; quien falsifique una cookie ve el armazón. Aquí no hay comprobación propia: se llama a `GET /api/admin/orders` con el token y contesta Spring. Un `403` se pinta como denegación —que es la denegación de verdad, no una imitación—, un `401` saca el aviso de sesión caducada y sin cookie sale el panel de acceso. Las dos capas existen y ninguna sobra: una evita enseñar una pantalla que no va a funcionar, la otra decide qué datos hay.
+
+El control es un `<select>` que **solo ofrece lo que la API va a aceptar**. El enum avanza y puede saltarse un paso, pero nunca retrocede ni repite el actual, así que un pedido entregado no lleva formulario: la ausencia del control *es* la información. Aun así la acción vuelve a validar el id y el estado, porque los dos llegan de un campo oculto y un desplegable, es decir, del navegador.
+
+Un cambio rechazado se cuenta, no se reintenta. `409 INVALID_STATUS_TRANSITION` es lo que produce un doble clic o una pestaña vieja, y reintentarlo le mandaría al cliente un segundo correo diciendo lo mismo. El resultado viaja en la query (`?error=CÓDIGO`), como el aviso de carrito lleno: un `<form>` de servidor no puede devolverle estado a la página que lo pintó, y hacerlo con `useActionState` convertiría la tabla en un componente de cliente.
+
+El filtro es `<form method="get">` con `?status=`, igual que los de la tienda: la URL guarda el estado, el botón de atrás funciona y el enlace se comparte. Un `?status=` que no sea uno de los tres se trata como ausente en vez de reenviarse a la API, que contestaría `400` por una URL mal escrita. **No hay paginación** porque la API no pagina; inventar páginas sobre un array completo solo escondería que la lista crece sin freno.
+
 ## Validación de los formularios
 
 Las reglas viven una sola vez, en `lib/validation.ts`, y las usan los dos lados:
@@ -146,11 +159,12 @@ front-react-project/
 │   ├── globals.css          # import de Tailwind + tokens del diseño (@theme)
 │   ├── actions/auth.ts      # Server Actions: login, register, forgot, reset, logout
 │   ├── actions/cart.ts      # Server Actions: añadir, cantidad, quitar, vaciar, pedir
+│   ├── actions/admin-orders.ts # Server Action: mover un pedido de estado
 │   └── [locale]/
 │       ├── layout.tsx       # layout raíz: <html lang>, fuentes, metadata
 │       ├── page.tsx         # bitácora pública (entradas estáticas)
 │       ├── login/, register/, forgot-password/, reset-password/, account/
-│       ├── admin/            # zona restringida a ROLE_ADMIN
+│       ├── admin/           # zona restringida a ROLE_ADMIN + orders/ con la tabla
 │       ├── store/           # rejilla con filtros + [id]/ con la ficha
 │       ├── cart/            # el carrito
 │       ├── checkout/        # datos de envío + success/ con el recibo
@@ -159,6 +173,7 @@ front-react-project/
 │   ├── PublicNav.tsx        # marca + tienda + carrito + acceso + idioma
 │   ├── LanguageSwitcher.tsx # dropdown (cliente): cambia el segmento de idioma
 │   ├── PostCard.tsx         # tarjeta de entrada
+│   ├── admin/               # AdminOrderFilters, AdminOrderRow, AdminStatusForm
 │   ├── auth/                # AuthCard, Field, FormError, SubmitButton + los 4 formularios
 │   ├── cart/                # AddToCartForm, CartLineRow, CartSummary, CheckoutForm
 │   ├── orders/              # OrderCard, OrderStatusBadge, OrderStatusSteps
@@ -181,7 +196,7 @@ El layout raíz vive **dentro** de `[locale]` porque `<html lang>` cambia con el
 
 ## i18n
 
-- Idiomas: `es` (por defecto), `en`, `pt`. Las claves originales vienen de los `messages*.properties` de Spring, con los mismos nombres; las de autenticación se añadieron bajo `auth.*`, las de la tienda bajo `store.*`, las del carrito bajo `cart.*` y `checkout.*`, las de los pedidos bajo `orders.*`, y los nombres de los estados bajo `order.status.*`, que comparten el recibo y el seguimiento.
+- Idiomas: `es` (por defecto), `en`, `pt`. Las claves originales vienen de los `messages*.properties` de Spring, con los mismos nombres; las de autenticación se añadieron bajo `auth.*`, las de la tienda bajo `store.*`, las del carrito bajo `cart.*` y `checkout.*`, las de los pedidos bajo `orders.*`, las de administración bajo `admin.orders.*`, y los nombres de los estados bajo `order.status.*`, que comparten el recibo, el seguimiento y la tabla del administrador.
 - Los textos se leen en componentes de servidor: los diccionarios **no** viajan al navegador (los formularios reciben solo el suyo).
 - `lib/i18n.ts` toma el bundle español como referencia: si `en.json` o `pt.json` pierden una clave, el proyecto no compila.
 - Las fechas se localizan con `Intl.DateTimeFormat` (`18 jul 2026` · `Jul 18, 2026` · `18 de jul. de 2026`) y los precios con `Intl.NumberFormat` (`6911 US$` · `$6,911` · `US$ 6.911`). Los pedidos llevan fecha **y hora**, porque dos del mismo día se distinguen por ella; el formato lo pone el servidor con su zona horaria, ya que hacerlo en el navegador convertiría estas páginas en componentes de cliente.
@@ -197,4 +212,6 @@ Tailwind v4 se configura desde CSS. Los tokens del diseño original (marca, degr
 
 ## Siguiente paso
 
-Sustituir las entradas estáticas por `GET /api/posts`, y dar contenido real a `admin` contra `/api/admin/**` — hoy la ruta existe y restringe el renderizado, pero detrás no hay ningún endpoint que la API proteja.
+Sustituir las entradas estáticas por `GET /api/posts`.
+
+La administración de pedidos se queda sin pantalla de detalle: la API no responde un pedido concreto a un administrador. `GET /api/admin/orders` da el resumen —sin líneas ni dirección— y `GET /api/orders/{id}` filtra por propietario dentro de la consulta, así que un administrador que abra el pedido de otro recibe `404`. Cuando el backend añada `GET /api/admin/orders/{id}`, la tabla puede enlazar a un detalle con las líneas, los datos de envío y las dos fechas.

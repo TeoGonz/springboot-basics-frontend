@@ -18,6 +18,7 @@ export type ApiErrorCode =
   | "EXPIRED_TOKEN"
   | "EMPTY_CART"
   | "ORDER_NOT_FOUND"
+  | "INVALID_STATUS_TRANSITION"
   | "UNEXPECTED";
 
 export class ApiError extends Error {
@@ -88,6 +89,18 @@ export function apiPost<T>(
 
 export function apiGet<T>(path: string, token?: string): Promise<T | null> {
   return request<T>(path, { method: "GET", token });
+}
+
+export function apiPatch<T>(
+  path: string,
+  body: unknown,
+  token?: string,
+): Promise<T | null> {
+  return request<T>(path, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+    token,
+  });
 }
 
 // --- Formas que devuelve la API ---
@@ -186,4 +199,41 @@ export function getMyOrder(
   token: string,
 ): Promise<OrderDetailResponse | null> {
   return apiGet<OrderDetailResponse>(`/api/orders/${id}`, token);
+}
+
+// --- Pedidos, lado administración ---
+
+/** Como el resumen del cliente, más el dueño. Lleva `username` y **nunca el
+ *  correo**: la dirección sirve para enviar, no para mostrarse en una tabla. */
+export type AdminOrderSummaryResponse = OrderSummaryResponse & {
+  username: string;
+};
+
+/**
+ * Todos los pedidos, del más nuevo al más viejo. Sin paginar, porque la API
+ * tampoco pagina: inventar páginas sobre un array completo solo escondería que
+ * la lista crece sin freno.
+ *
+ * Un `status` desconocido lo contesta la API con 400, así que quien llama solo
+ * pasa uno de los tres o nada.
+ */
+export function getAllOrders(
+  token: string,
+  status?: OrderStatus,
+): Promise<AdminOrderSummaryResponse[] | null> {
+  const query = status ? `?status=${status}` : "";
+  return apiGet<AdminOrderSummaryResponse[]>(`/api/admin/orders${query}`, token);
+}
+
+/** Avanza el estado. Retroceder o repetir el actual lo rechaza Spring con 409. */
+export function updateOrderStatus(
+  id: number,
+  status: OrderStatus,
+  token: string,
+): Promise<OrderDetailResponse | null> {
+  return apiPatch<OrderDetailResponse>(
+    `/api/admin/orders/${id}/status`,
+    { status },
+    token,
+  );
 }

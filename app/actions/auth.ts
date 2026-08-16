@@ -47,6 +47,7 @@ const ERROR_KEYS: Record<ApiErrorCode, MessageKey> = {
   // decidir aquí qué se le enseña al usuario.
   EMPTY_CART: "auth.error.UNEXPECTED",
   ORDER_NOT_FOUND: "auth.error.UNEXPECTED",
+  INVALID_STATUS_TRANSITION: "auth.error.UNEXPECTED",
   UNEXPECTED: "auth.error.UNEXPECTED",
 };
 
