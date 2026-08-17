@@ -130,6 +130,14 @@ export type UserResponse = {
 
 export type OrderStatus = "PREPARING" | "SHIPPED" | "DELIVERED";
 
+/** El orden del enum en la API, que solo avanza. Sirve para comparar posiciones
+ *  —¿este estado va por delante del que hay en pantalla?— sin repetir la lista. */
+export const ORDER_STATUS_ORDER: readonly OrderStatus[] = [
+  "PREPARING",
+  "SHIPPED",
+  "DELIVERED",
+];
+
 export type OrderItemResponse = {
   productId: number;
   title: string;
@@ -199,6 +207,41 @@ export function getMyOrder(
   token: string,
 ): Promise<OrderDetailResponse | null> {
   return apiGet<OrderDetailResponse>(`/api/orders/${id}`, token);
+}
+
+/** Lo que viaja en cada evento `status` del stream. Tres campos: el evento dice
+ *  *qué cambió*, no *cómo es el pedido* — el resto ya está en la página. */
+export type OrderStatusEvent = {
+  orderId: number;
+  status: OrderStatus;
+  at: string;
+};
+
+/**
+ * Abre el stream SSE de un pedido y devuelve la `Response` **sin tocar**.
+ *
+ * No pasa por `request<T>()` a propósito: aquel parsea el JSON, y parsear
+ * consume el cuerpo — que aquí es justo lo que hay que reenviar entero y sin
+ * bufferizar. Vive en este archivo solo para que la URL base siga estando en un
+ * único sitio.
+ *
+ * El `signal` es lo que separa un proxy de una fuga: sin él, cerrar la pestaña
+ * corta al navegador con Next pero deja la conexión con Spring abierta hasta su
+ * tope de 15 minutos.
+ */
+export function openOrderStream(
+  id: number,
+  token: string,
+  signal?: AbortSignal,
+): Promise<Response> {
+  return fetch(`${BASE_URL}/api/orders/${id}/stream`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: "text/event-stream",
+    },
+    cache: "no-store",
+    signal,
+  });
 }
 
 // --- Pedidos, lado administración ---

@@ -48,8 +48,9 @@ La bitácora pública funciona sin backend. Las pantallas de autenticación nece
 | `/{idioma}/checkout/success?order=N` | Recibo del pedido, releído de la API |
 | `/{idioma}/orders` | Mis pedidos, del más nuevo al más viejo; sin sesión, panel de acceso |
 | `/{idioma}/orders/{id}` | Seguimiento de un pedido: mapa de estado, envío y líneas |
+| `/api/orders/{id}/stream` | No es una pantalla: el proxy del stream de estado. Sin idioma, porque no lleva prosa |
 
-`{idioma}` es `es`, `en` o `pt`; cualquier otro devuelve 404 (`dynamicParams = false` en el layout). El `{id}` de la tienda vuelve a abrirlo (`dynamicParams = true`): el catálogo lo llena un tercero, así que no hay lista de ids que prerenderizar. Los segmentos de ruta están en inglés en los tres idiomas: traducirlos exigiría un mapa de rutas por idioma sin ganar nada.
+`{idioma}` es `es`, `en` o `pt`; cualquier otro devuelve 404 (`dynamicParams = false` en el layout). El `{id}` de la tienda vuelve a abrirlo (`dynamicParams = true`): el catálogo lo llena un tercero, así que no hay lista de ids que prerenderizar. Los segmentos de ruta están en inglés en los tres idiomas: traducirlos exigiría un mapa de rutas por idioma sin ganar nada. `/api/...` se queda fuera de `[locale]` y no choca con él: en el enrutado de Next un segmento estático gana al dinámico.
 
 Con sesión abierta, `login`, `register` y `forgot-password` redirigen a `/{idioma}/account`. Sin sesión, `account` y `admin` redirigen a `login`.
 
@@ -63,7 +64,7 @@ El navegador **nunca** ve el token ni llama a Spring:
 2. La acción llama a la API, recibe el JWT y lo guarda en la cookie `bitacora_session` con `httpOnly`, `sameSite=lax` y `maxAge` igual a la vida del token. Ningún script de la página puede leerla — que es exactamente lo que no ofrece `localStorage`. El atributo `secure` se activa en builds de producción; Next lo omite cuando la conexión es http en claro, así que en despliegue real el sitio debe ir por https.
 3. Las páginas privadas leen la cookie en el servidor y llaman a la API con `Authorization: Bearer …`.
 
-Como quien llama a la API es Node y no el navegador, **no hace falta CORS** en el backend.
+Como quien llama a la API es Node y no el navegador, **no hace falta CORS** en el backend. La única petición que el navegador hace por su cuenta es el stream de seguimiento (`/api/orders/{id}/stream`), y va a una ruta de esta misma app que reenvía a Spring desde el servidor: sigue sin salir de aquí ni un token ni una llamada cruzada.
 
 Cerrar sesión borra la cookie. El token sigue siendo válido en el servidor hasta que caduca: una sesión sin estado no se puede revocar.
 
@@ -115,7 +116,13 @@ Cerrar el pedido llama a `POST /api/orders` con el token de la cookie, borra el 
 
 El detalle enseña el **mapa de estado**: tres pasos (`PREPARING` · `SHIPPED` · `DELIVERED`) en un `<ol>` con tres estados por paso —hecho, actual, pendiente—, el actual marcado con `aria-current="step"` y cada estado escrito además del color. La traducción del estado vive aquí, bajo `order.status.*`: la API contesta `"SHIPPED"`, como todo lo que devuelve. Un estado que este front no conozca deja los tres pasos pendientes y enseña el código crudo, en vez de romperse: la API puede ganar uno antes de que el front se entere.
 
-**Ni sondeo ni componentes de cliente.** El estado lo mueve un administrador horas después, así que la forma de refrescar es recargar y la página lo dice. Un temporizador en el navegador para cazar un evento que ocurre dos veces por pedido no compensa.
+**El mapa se mueve solo.** Cuando un administrador cambia el estado, la pantalla del cliente lo refleja en el momento, sin recargar: el detalle abre un `EventSource` contra `/api/orders/{id}/stream` y repinta el mapa, la fecha del último movimiento y la etiqueta de la cabecera. Nada de sondeo — un temporizador cada tres segundos son 1.200 peticiones por hora y por pestaña, casi todas contestando que no ha pasado nada, y la novedad llegaría igualmente tarde.
+
+Ese `/api/orders/{id}/stream` es un **route handler de Next**, no el endpoint de Spring. Es el único sitio donde el navegador llama a algo de esta app por su cuenta, y sigue sin hablar con la API: el handler corre en Node, lee la cookie de sesión y abre el stream del backend con el token. No es un rodeo, es la única forma. `EventSource` acepta una URL y nada más —no hay manera de ponerle una cabecera `Authorization`— y el token vive en una cookie `httpOnly` que ningún script puede leer. Las salidas serían meter el token en la query, donde queda escrito en cada log de acceso y en el historial, o abrir la API al navegador y con ella el CORS que este proyecto no tiene por decisión. Un Server Action tampoco vale: contesta una vez y termina, y esto es una conexión que se queda abierta.
+
+El handler no decide nada sobre permisos. Reenvía la petición con el token y contesta Spring: un pedido ajeno responde el mismo `404` de siempre, y sin sesión el handler devuelve `401` sin redirigir —un `EventSource` no sigue una redirección a una pantalla de acceso de forma útil—.
+
+**Es una mejora, no un requisito.** El componente en vivo se renderiza también en el servidor, así que con JavaScript apagado la página es exactamente la de antes: el mismo mapa, la misma fecha y la nota de recargar. La nota es lo único que cambia — pasa a «En vivo» cuando la conexión está abierta y vuelve a pedir que se recargue si se cae del todo. El mapa **nunca retrocede**: un evento que no vaya por delante de lo que hay en pantalla se ignora. Y `DELIVERED` cierra la conexión desde el navegador, porque el backend también termina el stream ahí y las dos partes tienen que estar de acuerdo: si solo colgase el servidor, `EventSource` reconectaría sola cada pocos segundos para recibir siempre la misma noticia.
 
 Las líneas salen del pedido, **nunca del catálogo**: por eso el backend guardó una copia. Un producto renombrado o borrado en DummyJSON no reescribe lo que el cliente compró.
 
@@ -157,6 +164,7 @@ front-react-project/
 │   ├── actions/auth.ts      # Server Actions: login, register, forgot, reset, logout
 │   ├── actions/cart.ts      # Server Actions: añadir, cantidad, quitar, vaciar, pedir
 │   ├── actions/admin-orders.ts # Server Action: mover un pedido de estado
+│   ├── api/orders/[id]/stream/ # route handler: proxy del SSE con el token de la cookie
 │   └── [locale]/
 │       ├── layout.tsx       # layout raíz: <html lang>, fuentes, metadata
 │       ├── page.tsx         # bitácora pública (entradas estáticas)
@@ -173,7 +181,7 @@ front-react-project/
 │   ├── admin/               # AdminOrderFilters, AdminOrderRow, AdminStatusForm
 │   ├── auth/                # AuthCard, Field, FormError, SubmitButton + los 4 formularios
 │   ├── cart/                # AddToCartForm, CartLineRow, QuantityInput, CartSummary, CheckoutForm
-│   ├── orders/              # OrderCard, OrderStatusBadge, OrderStatusSteps
+│   ├── orders/              # OrderCard, OrderStatusBadge, OrderStatusSteps, OrderStatusLive
 │   └── store/               # StoreFilters, ProductCard, ProductImage, Pagination
 ├── lib/
 │   ├── api.ts               # cliente de la API de Spring (solo servidor) + tipos
@@ -194,9 +202,9 @@ El layout raíz vive **dentro** de `[locale]` porque `<html lang>` cambia con el
 ## i18n
 
 - Idiomas: `es` (por defecto), `en`, `pt`. Las claves originales vienen de los `messages*.properties` de Spring, con los mismos nombres; las de autenticación se añadieron bajo `auth.*`, las de la tienda bajo `store.*`, las del carrito bajo `cart.*` y `checkout.*`, las de los pedidos bajo `orders.*`, las de administración bajo `admin.orders.*`, y los nombres de los estados bajo `order.status.*`, que comparten el recibo, el seguimiento y la tabla del administrador.
-- Los textos se leen en componentes de servidor: los diccionarios **no** viajan al navegador (los formularios reciben solo el suyo).
+- Los textos se leen en componentes de servidor. Al navegador solo baja el diccionario del idioma que se está viendo, y solo porque lo reciben como prop las pocas piezas de cliente que hay: los formularios y el seguimiento en vivo.
 - `lib/i18n.ts` toma el bundle español como referencia: si `en.json` o `pt.json` pierden una clave, el proyecto no compila.
-- Las fechas se localizan con `Intl.DateTimeFormat` (`18 jul 2026` · `Jul 18, 2026` · `18 de jul. de 2026`) y los precios con `Intl.NumberFormat` (`6911 US$` · `$6,911` · `US$ 6.911`). Los pedidos llevan fecha **y hora**, porque dos del mismo día se distinguen por ella; el formato lo pone el servidor con su zona horaria, ya que hacerlo en el navegador convertiría estas páginas en componentes de cliente.
+- Las fechas se localizan con `Intl.DateTimeFormat` (`18 jul 2026` · `Jul 18, 2026` · `18 de jul. de 2026`) y los precios con `Intl.NumberFormat`, siempre con céntimos (`6911,00 US$` · `$6,911.00` · `US$ 6.911,00`). Los pedidos llevan fecha **y hora**, porque dos del mismo día se distinguen por ella; el formato lo pone el servidor con su zona horaria. La única excepción son las fechas que llegan por el stream de seguimiento, que se formatean en el navegador porque para entonces no hay servidor al que preguntar; la inicial sí baja formateada, para que el HTML del servidor y el del navegador no discrepen al hidratar.
 - Lo que llega de una API ajena no se traduce: los nombres y descripciones del catálogo se quedan en inglés, y la página lo dice.
 
 ## Estilos

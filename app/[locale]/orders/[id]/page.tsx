@@ -3,8 +3,7 @@ import { notFound } from "next/navigation";
 import { BsArrowLeft, BsBoxArrowInRight } from "react-icons/bs";
 
 import { logout } from "@/app/actions/auth";
-import OrderStatusBadge from "@/components/orders/OrderStatusBadge";
-import OrderStatusSteps from "@/components/orders/OrderStatusSteps";
+import OrderStatusLive from "@/components/orders/OrderStatusLive";
 import PublicNav from "@/components/PublicNav";
 import ProductImage from "@/components/store/ProductImage";
 import { ApiError, getMyOrder, type OrderDetailResponse } from "@/lib/api";
@@ -24,6 +23,11 @@ export const dynamicParams = true;
 /**
  * Seguimiento de un pedido: el mapa de estado, los datos de envío con los que se
  * hizo y las líneas congeladas.
+ *
+ * El mapa se mueve solo cuando la tienda cambia el estado — eso lo lleva
+ * `OrderStatusLive` sobre el SSE del backend. La página sigue siendo de
+ * servidor y sigue pintando el estado que trae la API: la conexión en vivo
+ * mejora lo que ya hay, no lo sostiene.
  *
  * Las líneas salen del pedido, nunca del catálogo: por eso el backend guardó
  * una copia. Un producto renombrado o borrado en DummyJSON no reescribe lo que
@@ -120,25 +124,18 @@ export default async function OrderDetailPage({
             </div>
           ) : (
             <>
-              <div className="mb-8 flex flex-wrap items-center gap-3">
-                <h1 className="text-3xl font-bold">#{order.id}</h1>
-                <OrderStatusBadge status={order.status} t={t} />
-                <p className="text-sm text-slate-500">
-                  {formatDateTime(order.createdAt, locale)}
-                </p>
-              </div>
-
-              <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-6">
-                <h2 className="mb-6 font-semibold">{t["orders.progress"]}</h2>
-                <OrderStatusSteps status={order.status} t={t} />
-                <p className="mt-6 text-sm text-slate-500">
-                  {t["orders.lastUpdate"]}{" "}
-                  {formatDateTime(order.updatedAt, locale)}
-                </p>
-                <p className="mt-1 text-xs text-slate-400">
-                  {t["orders.note.reload"]}
-                </p>
-              </section>
+              {/* Cabecera y progreso son lo único que se mueve solo, y van
+                  juntos para que la etiqueta de arriba no contradiga al mapa.
+                  Todo lo de abajo se queda en el servidor: ni el envío ni las
+                  líneas cambian después de hacerse el pedido. */}
+              <OrderStatusLive
+                orderId={order.id}
+                createdAtLabel={formatDateTime(order.createdAt, locale)}
+                initialStatus={order.status}
+                initialUpdatedAtLabel={formatDateTime(order.updatedAt, locale)}
+                locale={locale}
+                t={t}
+              />
 
               <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-6">
                 <h2 className="mb-2 font-semibold">{t["orders.shipping"]}</h2>
